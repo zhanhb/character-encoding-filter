@@ -11,7 +11,6 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
@@ -20,15 +19,28 @@ public class Request extends HttpServletRequestWrapper {
 
     public static final String DEFAULT_CHARACTER_ENCODING = "ISO-8859-1";
     private static final int CACHED_POST_LEN = 8192;
-    private static final Pattern pattern = Pattern.compile(
-            "(?:"
-            + "[\u0000-\u007F]|" // ASCII
-            + "(?:[\u00E0-\u00EF][\u0080-\u00BF]{2})|" // 3 bytes
-            + "(?:[\u00C0-\u00DF][\u0080-\u00BF])|" // 2 byte
-            + "(?:[\u00F0-\u00F7][\u0080-\u00BF]{3})|" // 4 bytes
-            + "(?:[\u00F8-\u00FB][\u0080-\u00BF]{4})|" // 5 bytes
-            + "(?:[\u00FC-\u00FD][\u0080-\u00BF]{5})" // 6 bytes
-            + ")+");
+    private static final Pattern pattern = Pattern.compile(buildUTF8Pattern());
+
+    /**
+     *
+     * @see http://tools.ietf.org/html/rfc3629#section-4
+     * @return
+     */
+    private static String buildUTF8Pattern() {
+        final String utf8_1 = "[\u0000-\u007F]";
+        final String utf8tail = "[\u0080-\u00BF]";
+        final String utf8_2 = "(?:[\u00C2-\u00DF]" + utf8tail + ")";
+        final String utf8_3 = "(?:\u00E0[\u00A0-\u00BF]" + utf8tail + ")|"
+                + "(?:[\u00E1-\u00EC]" + utf8tail + "{2}" + ")|"
+                + "(?:\u00ED[\u0080-\u009F]" + utf8tail + ")|"
+                + "(?:[\u00EE-\u00EF]" + utf8tail + "{2}" + ")";
+        final String utf8_4 = "(?:\u00F0[\u0090-\u00BF]" + utf8tail + "{2})|"
+                + "(?:[\u00F1-\u00F3]" + utf8tail + "{3}" + ")|"
+                + "(?:\u00F4[\u0080-\u008F]" + utf8tail + "{2}" + ")";
+        final String utf8char = utf8_1 + "|" + utf8_2 + "|" + utf8_3 + "|" + utf8_4;
+        final String utf8 = "(?:" + utf8char + ")*";
+        return utf8;
+    }
 
     private Map<String, String[]> parameterMap;
     private boolean parametersParsed = false;
