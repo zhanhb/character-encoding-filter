@@ -29,6 +29,7 @@ import javax.servlet.http.HttpServletResponseWrapper;
 class Response extends HttpServletResponseWrapper {
 
     private static final char[] hexBytes = "0123456789ABCDEF".toCharArray();
+    private Request request;
 
     Response(HttpServletResponse response) {
         super(response);
@@ -45,11 +46,13 @@ class Response extends HttpServletResponseWrapper {
     }
 
     @Override
+    @Deprecated
     public String encodeUrl(String url) {
         return super.encodeUrl(encode(url));
     }
 
     @Override
+    @Deprecated
     public String encodeRedirectUrl(String url) {
         return super.encodeRedirectUrl(encode(url));
     }
@@ -61,7 +64,7 @@ class Response extends HttpServletResponseWrapper {
 
     private CharBuffer ensureCapacity(CharBuffer buff, int addition) {
         if (buff.remaining() < addition) {
-            int oldSize = buff.capacity();
+            int oldSize = buff.limit();
             int newSize;
             // grow in larger chunks
             if (buff.position() + addition < (oldSize << 1)) {
@@ -70,7 +73,9 @@ class Response extends HttpServletResponseWrapper {
                 newSize = (oldSize << 1) + addition;
             }
             buff.flip();
-            return CharBuffer.allocate(newSize).put(buff);
+            return (buff.isDirect()
+                    ? ByteBuffer.allocateDirect(newSize << 1).asCharBuffer()
+                    : CharBuffer.allocate(newSize)).put(buff);
         }
         return buff;
     }
@@ -95,13 +100,7 @@ class Response extends HttpServletResponseWrapper {
             char ch = in.get();
             if (ch >= 128) {
                 int position = out.position();
-                while (true) {
-                    out = ensureCapacity(out, 1).put(ch);
-                    if (!in.hasRemaining()) {
-                        break;
-                    }
-                    ch = in.get();
-                }
+                out = ensureCapacity(out, 1).put(ch);
                 out.flip().position(position);
                 ByteBuffer encode = charset.encode(out);
                 out.limit(out.capacity()).position(position);
@@ -114,5 +113,21 @@ class Response extends HttpServletResponseWrapper {
             }
         }
         return out.flip().toString();
+    }
+
+    public Request getRequest() {
+        if (this.request == null) {
+            throw new IllegalStateException("Request not connected");
+        }
+        return request;
+    }
+
+    public void connect(Request request) {
+        if (request == null) {
+            throw new NullPointerException();
+        } else if (this.request != null) {
+            throw new IllegalStateException("Already connected");
+        }
+        this.request = request;
     }
 }

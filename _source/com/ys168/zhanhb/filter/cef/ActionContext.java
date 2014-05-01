@@ -13,17 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.ys168.zhanhb.filter.cef;
 
-import java.nio.charset.Charset;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  *
  * @author zhanhb
  */
-interface Constants {
+public class ActionContext {
 
-    public static final Charset ISO_8859_1 = Charset.forName("ISO-8859-1");
-    public static final Charset UTF8 = Charset.forName("UTF-8");
-    public static final Charset DEFAULT_CHARSET = ISO_8859_1;
+    private final HttpServletRequest request;
+    private final HttpServletResponse response;
+
+    ActionContext(HttpServletRequest request, HttpServletResponse response) {
+        this.request = request;
+        this.response = response;
+    }
+
+    public HttpServletRequest getRequest() {
+        return request;
+    }
+
+    public HttpServletResponse getResponse() {
+        return response;
+    }
 }

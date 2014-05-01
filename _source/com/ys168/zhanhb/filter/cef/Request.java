@@ -122,7 +122,7 @@ class Request extends HttpServletRequestWrapper {
 
     private ByteBuffer ensureCapacity(ByteBuffer buff, int addition) {
         if (buff.remaining() < addition) {
-            int oldSize = buff.capacity();
+            int oldSize = buff.limit();
             int newSize;
             // grow in larger chunks
             if (buff.position() + addition < (oldSize << 1)) {
@@ -158,7 +158,7 @@ class Request extends HttpServletRequestWrapper {
         int len;
         do {
             len = inputStream.read(buffer, 0, CACHED_POST_LEN);
-            if (connector.getMaxPostSize() > 0 && (body.capacity() + len) > connector.getMaxPostSize()) {
+            if (connector.getMaxPostSize() > 0 && (body.position() + len) > connector.getMaxPostSize()) {
                 // Too much data
                 throw new IOException(); // sm.getString("coyoteRequest.chunkedPostTooLarge")
             }
@@ -277,5 +277,9 @@ class Request extends HttpServletRequestWrapper {
     Request setConnector(Connector connector) {
         this.connector = connector;
         return this;
+    }
+
+    public void connect(Response response) {
+        response.connect(this);
     }
 }

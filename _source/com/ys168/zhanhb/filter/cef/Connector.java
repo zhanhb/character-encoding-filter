@@ -21,8 +21,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -32,7 +30,6 @@ import javax.servlet.http.HttpServletResponse;
  * @author zhanhb
  */
 public class Connector {
-
 
     // ----------------------------------------------------- Instance Variables
     /**
@@ -135,11 +132,11 @@ public class Connector {
         this.maxSavePostSize = maxSavePostSize;
         return this;
     }
-
+    
     public String getParseBodyMethods() {
         return this.parseBodyMethods;
     }
-
+    
     public Connector setParseBodyMethods(String methods) {
         Set<String> methodSet;
         if (null != methods) {
@@ -158,28 +155,15 @@ public class Connector {
         this.parseBodyMethodsSet = methodSet;
         return this;
     }
-
+    
     boolean isParseBodyMethod(String method) {
         return parseBodyMethodsSet.contains(method);
     }
-
-    public ServletRequest createRequest(ServletRequest req) {
-        HttpServletRequest request;
-        try {
-            request = (HttpServletRequest) req;
-        } catch (ClassCastException ex) {
-            return req;
-        }
-        return new Request(request).setConnector(this);
-    }
-
-    public ServletResponse createResponse(ServletResponse resp) {
-        HttpServletResponse response;
-        try {
-            response = (HttpServletResponse) resp;
-        } catch (ClassCastException ex) {
-            return resp;
-        }
-        return new Response(response);
+    
+    public ActionContext createActionContext(HttpServletRequest req, HttpServletResponse resp) {
+        Request request = new Request(req).setConnector(this);
+        Response response = new Response(resp);
+        request.connect(response);
+        return new ActionContext(request, response);
     }
 }

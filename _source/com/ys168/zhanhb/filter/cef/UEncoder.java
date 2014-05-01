@@ -13,17 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ys168.zhanhb.filter.cef;
 
-import java.nio.charset.Charset;
+package com.ys168.zhanhb.filter.cef;
 
 /**
  *
  * @author zhanhb
  */
-interface Constants {
+class UEncoder {
 
-    public static final Charset ISO_8859_1 = Charset.forName("ISO-8859-1");
-    public static final Charset UTF8 = Charset.forName("UTF-8");
-    public static final Charset DEFAULT_CHARSET = ISO_8859_1;
 }

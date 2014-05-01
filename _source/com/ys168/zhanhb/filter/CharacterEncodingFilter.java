@@ -15,6 +15,7 @@
  */
 package com.ys168.zhanhb.filter;
 
+import com.ys168.zhanhb.filter.cef.ActionContext;
 import com.ys168.zhanhb.filter.cef.Connector;
 import java.io.IOException;
 import javax.servlet.Filter;
@@ -23,6 +24,8 @@ import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  *
@@ -67,17 +70,26 @@ public class CharacterEncodingFilter implements Filter {
     }
 
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+    public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain)
             throws IOException, ServletException {
         if (characterEncoding != null) {
-            request.setCharacterEncoding(characterEncoding);
+            req.setCharacterEncoding(characterEncoding);
             if (setResponseCharacterEncoding) {
-                response.setCharacterEncoding(characterEncoding);
+                resp.setCharacterEncoding(characterEncoding);
             }
         }
-        // Create request and do the chain
-        chain.doFilter(connector.createRequest(request),
-                connector.createResponse(response));
+        HttpServletRequest request;
+        HttpServletResponse response;
+        try {
+            request = (HttpServletRequest) req;
+            response = (HttpServletResponse) resp;
+        } catch (ClassCastException ex) {
+            chain.doFilter(req, resp);
+            return;
+        }
+        // Create action context and do the chain
+        ActionContext context = connector.createActionContext(request, response);
+        chain.doFilter(context.getRequest(), context.getResponse());
     }
 
     @Override
