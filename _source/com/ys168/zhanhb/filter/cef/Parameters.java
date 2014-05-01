@@ -14,12 +14,10 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package com.ys168.zhanhb.filter.http;
+package com.ys168.zhanhb.filter.cef;
 
-import com.ys168.zhanhb.filter.buf.ByteChunk;
-import com.ys168.zhanhb.filter.buf.MessageBytes;
-import com.ys168.zhanhb.filter.buf.UDecoder;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.ArrayList;
@@ -28,24 +26,17 @@ import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- *
- * @author Costin Manolache
- */
-public final class Parameters {
+final class Parameters {
 
-    public static final String DEFAULT_ENCODING = "ISO-8859-1";
-    private static final Charset DEFAULT_CHARSET = ByteChunk.DEFAULT_CHARSET;
+    private static final Charset DEFAULT_CHARSET = Constants.DEFAULT_CHARSET;
 
     private final Map<String, ArrayList<String>> paramHashValues
             = new LinkedHashMap<String, ArrayList<String>>();
 
     private boolean didQueryParameters = false;
 
-    private MessageBytes queryMB;
-
+    private String queryString;
     private UDecoder urlDec;
-    private final MessageBytes decodedQuery = MessageBytes.newInstance();
 
     private String encoding = null;
     private String queryStringEncoding = null;
@@ -59,56 +50,50 @@ public final class Parameters {
      */
     private boolean parseFailed = false;
 
-    // -------------------- Parameter parsing --------------------
-    // we are called from a single thread - we can do it the hard way
-    // if needed
-    private final ByteChunk tmpName = new ByteChunk();
-    private final ByteChunk tmpValue = new ByteChunk();
-
-    public Parameters() {
-        // NO-OP
+    Parameters setQueryString(String queryString) {
+        this.queryString = queryString;
+        return this;
     }
 
-    public void setQuery(MessageBytes queryMB) {
-        this.queryMB = queryMB;
-    }
-
-    public void setLimit(int limit) {
+    Parameters setLimit(int limit) {
         this.limit = limit;
+        return this;
     }
 
-    public String getEncoding() {
+    String getEncoding() {
         return encoding;
     }
 
-    public void setEncoding(String s) {
+    Parameters setEncoding(String s) {
         encoding = s;
+        return this;
     }
 
-    public void setQueryStringEncoding(String s) {
+    Parameters setQueryStringEncoding(String s) {
         queryStringEncoding = s;
+        return this;
     }
 
-    public boolean isParseFailed() {
+    boolean isParseFailed() {
         return parseFailed;
     }
 
-    public void setParseFailed(boolean parseFailed) {
+    Parameters setParseFailed(boolean parseFailed) {
         this.parseFailed = parseFailed;
+        return this;
     }
 
-    public void recycle() {
+    Parameters recycle() {
         parameterCount = 0;
         paramHashValues.clear();
         didQueryParameters = false;
         encoding = null;
-        decodedQuery.recycle();
         parseFailed = false;
+        return this;
     }
 
-    public String[] getParameterValues(String name) {
+    String[] getParameterValues(String name) {
         handleQueryParameters();
-        // no "facade"
         ArrayList<String> values = paramHashValues.get(name);
         if (values == null) {
             return null;
@@ -116,51 +101,51 @@ public final class Parameters {
         return values.toArray(new String[values.size()]);
     }
 
-    public Enumeration<String> getParameterNames() {
+    Enumeration<String> getParameterNames() {
         handleQueryParameters();
         return Collections.enumeration(paramHashValues.keySet());
     }
 
-    public String getParameter(String name) {
+    String getParameter(String name) {
         handleQueryParameters();
         ArrayList<String> values = paramHashValues.get(name);
         if (values != null) {
             /*if (values.isEmpty()) { // will never happen
-                return "";
-            }*/
+             return "";
+             }*/
             return values.get(0);
         } else {
             return null;
         }
     }
 
+    int size() {
+        return paramHashValues.size();
+    }
+
     // -------------------- Processing --------------------
     /**
      * Process the query string into parameters
      */
-    public void handleQueryParameters() {
+    Parameters handleQueryParameters() {
         if (didQueryParameters) {
-            return;
+            return this;
         }
 
         didQueryParameters = true;
 
-        if (queryMB == null || queryMB.isNull()) {
-            return;
+        if (queryString == null) {
+            return this;
         }
 
-        try {
-            decodedQuery.duplicate(queryMB);
-        } catch (IOException impossible) {
-        }
-        processParameters(decodedQuery, queryStringEncoding);
+        return processParameters(DEFAULT_CHARSET.encode(queryString), queryStringEncoding);
     }
 
-    public void addParameter(String key, String value)
+    Parameters addParameter(String key, String value)
             throws IllegalStateException {
 
         if (key == null) {
-            return;
+            return this;
         }
 
         parameterCount++;
@@ -177,17 +162,19 @@ public final class Parameters {
             paramHashValues.put(key, values);
         }
         values.add(value);
+        return this;
     }
 
-    public void setURLDecoder(UDecoder u) {
+    Parameters setURLDecoder(UDecoder u) {
         urlDec = u;
+        return this;
     }
 
-    public void processParameters(byte bytes[], int start, int len) {
-        processParameters(bytes, start, len, getCharset(encoding));
+    Parameters processParameters(byte bytes[], int start, int len) {
+        return processParameters(bytes, start, len, getCharset(encoding));
     }
 
-    private void processParameters(byte bytes[], int start, int len,
+    private Parameters processParameters(byte bytes[], int start, int len,
             Charset charset) {
         int pos = start;
         int end = start + len;
@@ -264,29 +251,24 @@ public final class Parameters {
                 // invalid chunk - it's better to ignore
             }
 
-            tmpName.setBytes(bytes, nameStart, nameEnd - nameStart);
+            final ByteBuffer tmpName;
+            final ByteBuffer tmpValue;
+
+            tmpName = ByteBuffer.wrap(bytes, nameStart, nameEnd - nameStart);
             if (valueStart >= 0) {
-                tmpValue.setBytes(bytes, valueStart, valueEnd - valueStart);
+                tmpValue = ByteBuffer.wrap(bytes, valueStart, valueEnd - valueStart);
             } else {
-                tmpValue.setBytes(bytes, 0, 0);
+                tmpValue = ByteBuffer.wrap(bytes, 0, 0);
             }
 
             try {
                 String name;
                 String value;
 
-                if (decodeName) {
-                    urlDecode(tmpName);
-                }
-                tmpName.setCharset(charset);
-                name = tmpName.toString();
+                name = charset.decode(decodeName ? urlDecode(tmpName) : tmpName).toString();
 
                 if (valueStart >= 0) {
-                    if (decodeValue) {
-                        urlDecode(tmpValue);
-                    }
-                    tmpValue.setCharset(charset);
-                    value = tmpValue.toString();
+                    value = charset.decode(decodeValue ? urlDecode(tmpValue) : tmpValue).toString();
                 } else {
                     value = "";
                 }
@@ -302,31 +284,24 @@ public final class Parameters {
             } catch (IOException e) {
                 parseFailed = true;
             }
-
-            tmpName.recycle();
-            tmpValue.recycle();
         }
+        return this;
     }
 
-    private void urlDecode(ByteChunk bc)
+    private ByteBuffer urlDecode(ByteBuffer bc)
             throws IOException {
         if (urlDec == null) {
             urlDec = new UDecoder();
         }
-        urlDec.convert(bc);
+        return urlDec.convert(bc);
     }
 
-    public void processParameters(MessageBytes data, String encoding) {
-        if (data == null || data.isNull() || data.getLength() <= 0) {
-            return;
+    Parameters processParameters(ByteBuffer data, String encoding) {
+        if (data == null || !data.hasRemaining()) {
+            return this;
         }
 
-        if (data.getType() != MessageBytes.T_BYTES) {
-            data.toBytes();
-        }
-        ByteChunk bc = data.getByteChunk();
-        processParameters(bc.getBytes(), bc.getOffset(),
-                bc.getLength(), getCharset(encoding));
+        return processParameters(data.array(), data.arrayOffset() + data.position(), data.remaining(), getCharset(encoding));
     }
 
     private Charset getCharset(String encoding) {

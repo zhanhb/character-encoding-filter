@@ -1,10 +1,9 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Copyright 2014 zhanhb.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -14,30 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ys168.zhanhb.filter;
+package com.ys168.zhanhb.filter.cef;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.ResourceBundle;
+import java.util.Set;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 /**
- * Implementation of a Coyote connector.
+ * Implementation of a character encoding connector.
  *
- * @author Craig R. McClanahan
- * @author Remy Maucherat
+ * @author zhanhb
  */
 public class Connector {
 
-    // ----------------------------------------------------- Instance Variables
-    /**
-     * The string manager for this package.
-     */
-    private static final ResourceBundle bundle
-            = ResourceBundle.getBundle("com.ys168.zhanhb.filter" + ".LocalStrings");
 
+    // ----------------------------------------------------- Instance Variables
     /**
      * The maximum number of parameters (GET plus POST) which will be
      * automatically parsed by the container. 10000 by default. A value of less
@@ -66,21 +63,7 @@ public class Connector {
     /**
      * A Set of methods determined by {@link #parseBodyMethods}.
      */
-    private HashSet<String> parseBodyMethodsSet;
-
-    /**
-     * query string encoding.
-     */
-    private String queryStringEncoding = null;
-
-    /**
-     * URI encoding as body.
-     */
-    private boolean useBodyEncodingForQueryString = false;
-
-    // ------------------------------------------------------------ Constructor
-    public Connector() {
-    }
+    private Set<String> parseBodyMethodsSet;
 
     // ------------------------------------------------------------- Properties
     /**
@@ -90,7 +73,7 @@ public class Connector {
      *
      * @return
      */
-    public int getMaxParameterCount() {
+    int getMaxParameterCount() {
         return maxParameterCount;
     }
 
@@ -100,9 +83,11 @@ public class Connector {
      * limit.
      *
      * @param maxParameterCount The new setting
+     * @return this
      */
-    public void setMaxParameterCount(int maxParameterCount) {
+    public Connector setMaxParameterCount(int maxParameterCount) {
         this.maxParameterCount = maxParameterCount;
+        return this;
     }
 
     /**
@@ -111,7 +96,7 @@ public class Connector {
      *
      * @return
      */
-    public int getMaxPostSize() {
+    int getMaxPostSize() {
         return maxPostSize;
     }
 
@@ -121,9 +106,11 @@ public class Connector {
      *
      * @param maxPostSize The new maximum size in bytes of a POST which will be
      * automatically parsed by the container
+     * @return this
      */
-    public void setMaxPostSize(int maxPostSize) {
+    public Connector setMaxPostSize(int maxPostSize) {
         this.maxPostSize = maxPostSize;
+        return this;
     }
 
     /**
@@ -132,7 +119,7 @@ public class Connector {
      *
      * @return
      */
-    public int getMaxSavePostSize() {
+    int getMaxSavePostSize() {
         return maxSavePostSize;
     }
 
@@ -142,56 +129,57 @@ public class Connector {
      *
      * @param maxSavePostSize The new maximum size in bytes of a POST which will
      * be saved by the container during authentication.
+     * @return this
      */
-    public void setMaxSavePostSize(int maxSavePostSize) {
+    public Connector setMaxSavePostSize(int maxSavePostSize) {
         this.maxSavePostSize = maxSavePostSize;
+        return this;
     }
 
     public String getParseBodyMethods() {
         return this.parseBodyMethods;
     }
 
-    public void setParseBodyMethods(String methods) {
-        HashSet<String> methodSet;
+    public Connector setParseBodyMethods(String methods) {
+        Set<String> methodSet;
         if (null != methods) {
-            List<String> asList = Arrays.asList(methods.split("\\s*,\\s*"));
-            methodSet = new HashSet<String>(asList.size());
-            for (String string : asList) {
+            List<String> list = Arrays.asList(methods.split(","));
+            methodSet = new HashSet<String>(list.size());
+            for (String string : list) {
                 methodSet.add(string.trim().toUpperCase(Locale.ENGLISH));
             }
             if (methodSet.contains("TRACE")) {
-                throw new IllegalArgumentException(bundle.getString("coyoteConnector.parseBodyMethodNoTrace"));
+                throw new IllegalArgumentException("TRACE method MUST NOT include an entity (see RFC 2616 Section 9.6)");
             }
         } else {
-            methodSet = new HashSet<String>(0);
+            methodSet = Collections.emptySet();
         }
         this.parseBodyMethods = methods;
         this.parseBodyMethodsSet = methodSet;
+        return this;
     }
 
     boolean isParseBodyMethod(String method) {
         return parseBodyMethodsSet.contains(method);
     }
 
-    public String getQueryStringEncoding() {
-        return queryStringEncoding;
+    public ServletRequest createRequest(ServletRequest req) {
+        HttpServletRequest request;
+        try {
+            request = (HttpServletRequest) req;
+        } catch (ClassCastException ex) {
+            return req;
+        }
+        return new Request(request).setConnector(this);
     }
 
-    public void setQueryStringEncoding(String URIEncoding) {
-        this.queryStringEncoding = URIEncoding;
-    }
-
-    public boolean isUseBodyEncodingForQueryString() {
-        return useBodyEncodingForQueryString;
-    }
-
-    public void setUseBodyEncodingForQueryString(boolean useBodyEncodingForURI) {
-        this.useBodyEncodingForQueryString = useBodyEncodingForURI;
-    }
-
-    public Request createRequest(HttpServletRequest req) {
-        Request request = new Request(req);
-        request.setConnector(this);
-        return request;
+    public ServletResponse createResponse(ServletResponse resp) {
+        HttpServletResponse response;
+        try {
+            response = (HttpServletResponse) resp;
+        } catch (ClassCastException ex) {
+            return resp;
+        }
+        return new Response(response);
     }
 }
