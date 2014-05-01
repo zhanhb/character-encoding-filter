@@ -132,11 +132,11 @@ public class Connector {
         this.maxSavePostSize = maxSavePostSize;
         return this;
     }
-    
+
     public String getParseBodyMethods() {
         return this.parseBodyMethods;
     }
-    
+
     public Connector setParseBodyMethods(String methods) {
         Set<String> methodSet;
         if (null != methods) {
@@ -155,11 +155,11 @@ public class Connector {
         this.parseBodyMethodsSet = methodSet;
         return this;
     }
-    
+
     boolean isParseBodyMethod(String method) {
         return parseBodyMethodsSet.contains(method);
     }
-    
+
     public ActionContext createActionContext(HttpServletRequest req, HttpServletResponse resp) {
         Request request = new Request(req).setConnector(this);
         Response response = new Response(resp);
