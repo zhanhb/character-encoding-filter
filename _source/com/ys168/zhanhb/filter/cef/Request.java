@@ -282,5 +282,4 @@ class Request extends HttpServletRequestWrapper {
         this.connector = connector;
         return this;
     }
-
 }

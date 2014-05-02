@@ -29,7 +29,7 @@ import javax.servlet.http.HttpServletResponse;
  *
  * @author zhanhb
  */
-public class Connector {
+public final class Connector {
 
     // ----------------------------------------------------- Instance Variables
     /**

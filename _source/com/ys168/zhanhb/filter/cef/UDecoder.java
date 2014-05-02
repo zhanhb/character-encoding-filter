@@ -48,10 +48,7 @@ final class UDecoder {
     }
 
     private static int x2c(byte b1, byte b2) {
-        int digit = (b1 & 0xF) + ((b1 & 0x40) != 0 ? 9 : 0);
-        digit <<= 4;
-        digit |= (b2 & 0xF) + ((b2 & 0x40) != 0 ? 9 : 0);
-        return digit;
+        return (((b1 & 0xF) + ((b1 & 0x40) != 0 ? 9 : 0)) << 4) | ((b2 & 0xF) + ((b2 & 0x40) != 0 ? 9 : 0));
     }
 
     /**
@@ -66,16 +63,18 @@ final class UDecoder {
         int end = buff.limit();
         for (; idx < end; ++idx) {
             byte b = buff.get(idx);
-            if (b == '+' || b == '%') {
+            if (b == '+') {
+                buff.put(idx, (byte) ' ');
+                continue;
+            }
+            if (b == '%') {
                 break;
             }
         }
-        // idx will be the smallest positive index ( first % or + )
+        // idx will be the smallest positive index of % or end
         for (int j = idx; j < end; j++, idx++) {
             byte b = buff.get(j);
-            if (b == '+') {
-                buff.put(idx, (byte) ' ');
-            } else if (b == '%') {
+            if (b == '%') {
                 // read next 2 digits
                 if (j + 2 >= end) {
                     throw EXCEPTION_EOF;
@@ -89,6 +88,8 @@ final class UDecoder {
                 j += 2;
                 int res = x2c(b1, b2);
                 buff.put(idx, (byte) res);
+            } else if (b == '+') {
+                buff.put(idx, (byte) ' ');
             } else {
                 buff.put(idx, b);
             }

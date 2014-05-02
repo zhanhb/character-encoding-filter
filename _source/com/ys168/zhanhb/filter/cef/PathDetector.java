@@ -43,6 +43,10 @@ class PathDetector {
             // Strings already parsed by the server
             return path;
         }
+        if (bytes.position() == path.length()) {
+            // ASCII bytes, just return
+            return path;
+        }
 
         // browsers will transfer URI encoding as UTF-8
         // so we try UTF-8 first, then the character encoding set in request attribute
