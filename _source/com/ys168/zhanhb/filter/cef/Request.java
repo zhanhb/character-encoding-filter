@@ -31,7 +31,6 @@ import javax.servlet.http.HttpServletRequestWrapper;
  */
 class Request extends HttpServletRequestWrapper {
 
-    private static final String DEFAULT_CHARACTER_ENCODING = "ISO-8859-1";
     private static final int CACHED_POST_LEN = 8192;
 
     private Map<String, String[]> parameterMap;
@@ -74,6 +73,7 @@ class Request extends HttpServletRequestWrapper {
         if (parameterMap == null) {
             Enumeration<String> parameterNames = getParameterNames();
             // after statement getParameterNames the parameter will be parsed
+            // parameters.size() will be exactly the parameter size.
             HashMap<String, String[]> map = new HashMap<String, String[]>(parameters.size());
             while (parameterNames.hasMoreElements()) {
                 String name = parameterNames.nextElement();
@@ -196,15 +196,9 @@ class Request extends HttpServletRequestWrapper {
         // hidden form field containing request encoding
         String enc = getCharacterEncoding();
 
-        if (enc != null) {
-            param.setEncoding(enc)
-                    .setQueryStringEncoding(enc);
-        } else {
-            param.setEncoding(DEFAULT_CHARACTER_ENCODING)
-                    .setQueryStringEncoding(DEFAULT_CHARACTER_ENCODING);
-        }
-
-        param.handleQueryParameters();
+        param.setEncoding(enc)
+                .setQueryStringEncoding(enc)
+                .handleQueryParameters();
 
         if (!getConnector().isParseBodyMethod(getMethod())) {
             return param;

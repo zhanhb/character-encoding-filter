@@ -93,8 +93,8 @@ class Response extends HttpServletResponseWrapper {
         }
 
         Charset charset = Constants.UTF8;
-        CharBuffer out = CharBuffer.allocate(end + 50).put(str, 0, start);
         CharBuffer in = CharBuffer.wrap(str, start, end);
+        CharBuffer out = CharBuffer.allocate(end + 50).put(str, 0, start);
 
         while (in.hasRemaining()) {
             char ch = in.get();

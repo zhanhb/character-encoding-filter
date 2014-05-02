@@ -20,6 +20,14 @@ import java.io.CharConversionException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+/**
+ * All URL decoding happens here. This way we can reuse, review, optimize
+ * without adding complexity to the buffers.
+ *
+ * The conversion will modify the original buffer.
+ *
+ * @author zhanhb
+ */
 final class UDecoder {
 
     /**
@@ -40,11 +48,9 @@ final class UDecoder {
     }
 
     private static int x2c(byte b1, byte b2) {
-        int digit = (b1 >= 'A') ? ((b1 & 0xDF) - 'A') + 10
-                : (b1 - '0');
+        int digit = (b1 & 0xF) + ((b1 & 0x40) != 0 ? 9 : 0);
         digit <<= 4;
-        digit |= (b2 >= 'A') ? ((b2 & 0xDF) - 'A') + 10
-                : (b2 - '0');
+        digit |= (b2 & 0xF) + ((b2 & 0x40) != 0 ? 9 : 0);
         return digit;
     }
 
@@ -52,7 +58,7 @@ final class UDecoder {
      * URLDecode, will modify the source.
      *
      * @param mb
-     * @return a buffer encoded maybe the parameter is returned.
+     * @return a buffer encoded maybe the parameter itself is returned.
      * @throws java.io.IOException
      */
     ByteBuffer convert(ByteBuffer buff) throws IOException {

@@ -57,6 +57,7 @@ class PathDetector {
                     continue;
                 }
             } else {
+                // often null
                 continue;
             }
             if (set.contains(charset)) {
@@ -67,6 +68,7 @@ class PathDetector {
             try {
                 return charset.newDecoder().decode(bytes).toString();
             } catch (CharacterCodingException ex) {
+                // rollback
                 bytes.position(position);
             }
         }

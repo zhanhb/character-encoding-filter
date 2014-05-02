@@ -21,9 +21,12 @@ import java.nio.charset.Charset;
  *
  * @author zhanhb
  */
-interface Constants {
+class Constants {
 
     public static final Charset ISO_8859_1 = Charset.forName("ISO-8859-1");
     public static final Charset UTF8 = Charset.forName("UTF-8");
     public static final Charset DEFAULT_CHARSET = ISO_8859_1;
+
+    private Constants() {
+    }
 }

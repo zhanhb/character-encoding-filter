@@ -90,6 +90,7 @@ public class CharacterEncodingFilter implements Filter {
         // Create action context and do the chain
         ActionContext context = connector.createActionContext(request, response);
         chain.doFilter(context.getRequest(), context.getResponse());
+        context.recycle();
     }
 
     @Override

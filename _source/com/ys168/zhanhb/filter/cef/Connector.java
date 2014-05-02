@@ -157,6 +157,9 @@ public class Connector {
     }
 
     boolean isParseBodyMethod(String method) {
+        if (parseBodyMethodsSet == null) {
+            setParseBodyMethods(getParseBodyMethods());
+        }
         return parseBodyMethodsSet.contains(method);
     }
 

@@ -23,7 +23,7 @@ import javax.servlet.http.HttpServletResponse;
  *
  * @author zhanhb
  */
-public class ActionContext {
+public final class ActionContext {
 
     private final HttpServletRequest request;
     private final HttpServletResponse response;
@@ -39,5 +39,8 @@ public class ActionContext {
 
     public HttpServletResponse getResponse() {
         return response;
+    }
+
+    public void recycle() {
     }
 }
