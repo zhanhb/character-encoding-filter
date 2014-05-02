@@ -33,3 +33,4 @@ you can config your web.xml more simple.
     <url-pattern>/*</url-pattern>
 </filter-mapping>
 ```
+If you are using JDK 1.4 or JDK 5, please use lib CharacterEncodingFilter_for_j2ee_1.4.jar instead of CharacterEncodingFilter.jar, no other differences.
