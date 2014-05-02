@@ -28,91 +28,39 @@ import javax.servlet.http.HttpServletResponseWrapper;
  */
 class Response extends HttpServletResponseWrapper {
 
-    private static final char[] hexBytes = "0123456789ABCDEF".toCharArray();
     private Request request;
+    private final UEncoder urlEncoder;
 
     Response(HttpServletResponse response) {
         super(response);
+        this.urlEncoder = new UEncoder();
     }
 
     @Override
     public String encodeURL(String url) {
-        return super.encodeURL(encode(url));
+        return super.encodeURL(urlEncoder.encode(url));
     }
 
     @Override
     public String encodeRedirectURL(String url) {
-        return super.encodeRedirectURL(encode(url));
+        return super.encodeRedirectURL(urlEncoder.encode(url));
     }
 
     @Override
     @Deprecated
     public String encodeUrl(String url) {
-        return super.encodeUrl(encode(url));
+        return super.encodeUrl(urlEncoder.encode(url));
     }
 
     @Override
     @Deprecated
     public String encodeRedirectUrl(String url) {
-        return super.encodeRedirectUrl(encode(url));
+        return super.encodeRedirectUrl(urlEncoder.encode(url));
     }
 
     @Override
     public void sendRedirect(String location) throws IOException {
-        super.sendRedirect(encode(location));
-    }
-
-    private CharBuffer ensureCapacity(CharBuffer buff, int addition) {
-        if (buff.remaining() < addition) {
-            int oldSize = buff.limit();
-            int newSize;
-            // grow in larger chunks
-            if (buff.position() + addition < (oldSize << 1)) {
-                newSize = oldSize << 1;
-            } else {
-                newSize = (oldSize << 1) + addition;
-            }
-            buff.flip();
-            return (buff.isDirect()
-                    ? ByteBuffer.allocateDirect(newSize << 1).asCharBuffer()
-                    : CharBuffer.allocate(newSize)).put(buff);
-        }
-        return buff;
-    }
-
-    private String encode(String str) {
-        int start = 0;
-        final int end = str.length();
-        for (; start < end; ++start) {
-            if (str.charAt(start) >= 128) {
-                break;
-            }
-        }
-        if (start == end) {
-            return str;
-        }
-
-        Charset charset = Constants.UTF8;
-        CharBuffer in = CharBuffer.wrap(str, start, end);
-        CharBuffer out = CharBuffer.allocate(end + 50).put(str, 0, start);
-
-        while (in.hasRemaining()) {
-            char ch = in.get();
-            if (ch >= 128) {
-                int position = out.position();
-                out = ensureCapacity(out, 1).put(ch);
-                out.flip().position(position);
-                ByteBuffer encode = charset.encode(out);
-                out.limit(out.capacity()).position(position);
-                while (encode.hasRemaining()) {
-                    byte b = encode.get();
-                    out = ensureCapacity(out, 3).put('%').put(hexBytes[b >> 4 & 0xF]).put(hexBytes[b & 0xF]);
-                }
-            } else {
-                out = ensureCapacity(out, 1).put(ch);
-            }
-        }
-        return out.flip().toString();
+        super.sendRedirect(urlEncoder.encode(location));
     }
 
     public Request getRequest() {

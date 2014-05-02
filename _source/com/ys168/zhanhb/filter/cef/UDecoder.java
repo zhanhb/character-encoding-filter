@@ -41,7 +41,7 @@ final class UDecoder {
     private static final IOException EXCEPTION_NOT_HEX_DIGIT = new DecodeException(
             "isHexDigit");
 
-    static boolean isHexDigit(int c) {
+    private static boolean isHexDigit(int c) {
         return ((c - '0' | '9' - c)
                 & (c - 'A' | 'F' - c)
                 & (c - 'a' | 'f' - c)) >= 0;
