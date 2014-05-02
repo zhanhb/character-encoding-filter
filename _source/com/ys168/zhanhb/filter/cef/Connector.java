@@ -135,9 +135,6 @@ public class Connector {
     }
 
     public ActionContext createActionContext(HttpServletRequest req, HttpServletResponse resp) {
-        Request request = new Request(req).setConnector(this);
-//        Response response = new Response(resp);
-//        request.connect(response);
-        return new ActionContext(request, resp);
+        return new ActionContext(new Request(req).setConnector(this), resp);
     }
 }

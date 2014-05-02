@@ -283,7 +283,4 @@ class Request extends HttpServletRequestWrapper {
         return this;
     }
 
-    public void connect(Response response) {
-        response.connect(this);
-    }
 }
