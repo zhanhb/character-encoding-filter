@@ -58,10 +58,6 @@ public class CharacterEncodingFilter implements Filter {
         if (str != null) {
             conn.setMaxParameterCount(Integer.parseInt(str.trim()));
         }
-        str = filterConfig.getInitParameter("maxSavePostSize");
-        if (str != null) {
-            conn.setMaxSavePostSize(Integer.parseInt(str.trim()));
-        }
         this.connector = conn;
         str = filterConfig.getInitParameter("setResponseCharacterEncoding");
         if (str != null) {
