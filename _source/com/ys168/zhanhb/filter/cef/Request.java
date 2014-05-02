@@ -25,10 +25,6 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 
-/**
- *
- * @author zhanhb
- */
 class Request extends HttpServletRequestWrapper {
 
     private static final int CACHED_POST_LEN = 8192;
@@ -138,7 +134,11 @@ class Request extends HttpServletRequestWrapper {
         return buff;
     }
 
-    private int readPostBody(InputStream inputStream, byte[] body, int len) throws IOException {
+    private int readPostBody(byte[] body, int len) throws IOException {
+        InputStream inputStream = getInputStream0();
+        if (inputStream == null) {
+            return -1;
+        }
         int offset = 0;
         do {
             int inputLen = inputStream.read(body, offset, len - offset);
@@ -150,7 +150,11 @@ class Request extends HttpServletRequestWrapper {
         return len;
     }
 
-    private byte[] readChunkedPostBody(InputStream inputStream) throws IOException {
+    private byte[] readChunkedPostBody() throws IOException {
+        InputStream inputStream = getInputStream0();
+        if (inputStream == null) {
+            return null;
+        }
         ByteBuffer body = ByteBuffer.allocate(256);
 
         byte[] buffer = new byte[CACHED_POST_LEN];
@@ -178,6 +182,16 @@ class Request extends HttpServletRequestWrapper {
             return result;
         } else {
             return body.array();
+        }
+    }
+
+    private InputStream getInputStream0() {
+        try {
+            return getInputStream();
+        } catch (IllegalStateException ex) {
+            return null;
+        } catch (IOException ex) {
+            return null;
         }
     }
 
@@ -221,15 +235,6 @@ class Request extends HttpServletRequestWrapper {
         boolean success = false;
         int len = getContentLength();
 
-        InputStream inputStream;
-        try {
-            inputStream = getInputStream();
-        } catch (IllegalStateException ex) {
-            return param;
-        } catch (IOException ex) {
-            return param;
-        }
-
         try {
             if (len > 0) {
                 int maxPostSize = connector.getMaxPostSize();
@@ -239,7 +244,7 @@ class Request extends HttpServletRequestWrapper {
                 byte[] formData = new byte[len];
 
                 try {
-                    if (readPostBody(inputStream, formData, len) != len) {
+                    if (readPostBody(formData, len) != len) {
                         return param;
                     }
                 } catch (IOException e) {
@@ -250,7 +255,7 @@ class Request extends HttpServletRequestWrapper {
             } else if ("chunked".equalsIgnoreCase(getHeader("transfer-encoding"))) {
                 byte[] formData;
                 try {
-                    formData = readChunkedPostBody(inputStream);
+                    formData = readChunkedPostBody();
                 } catch (IOException e) {
                     // Client disconnect or chunkedPostTooLarge error
                     return param;
