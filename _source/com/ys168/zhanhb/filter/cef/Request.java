@@ -25,6 +25,11 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 
+/**
+ * Request facade.
+ *
+ * @author zhanhb
+ */
 class Request extends HttpServletRequestWrapper {
 
     private static final int CACHED_POST_LEN = 8192;

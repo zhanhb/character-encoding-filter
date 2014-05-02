@@ -26,6 +26,11 @@ import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * Parameters
+ *
+ * @author Costin Manolache
+ */
 final class Parameters {
 
     private static final Charset DEFAULT_CHARSET = Constants.DEFAULT_CHARSET;

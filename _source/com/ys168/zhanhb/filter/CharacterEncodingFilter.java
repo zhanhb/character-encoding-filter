@@ -28,7 +28,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /**
- *
+ * Character Encoding Filter
+ * 
  * @author zhanhb
  */
 public class CharacterEncodingFilter implements Filter {

@@ -24,6 +24,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ * Path Detector. detect the contextPath and pathInfo who doesn't have properly
+ * character encoding.
  *
  * @author zhanhb
  */
