@@ -18,14 +18,23 @@ package com.ys168.zhanhb.filter.cef;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
+import java.util.BitSet;
 
-/**
- *
- * @author zhanhb
- */
-public class UEncoder {
+class UEncoder {
 
     private static final char[] hexBytes = "0123456789ABCDEF".toCharArray();
+
+    private BitSet safeChars = null;
+
+    UEncoder() {
+        initSafeChars();
+    }
+
+    public void addSafeCharacter(char ch) {
+        if (ch < 128) {
+            safeChars.set(ch);
+        }
+    }
 
     private CharBuffer ensureCapacity(CharBuffer buff, int addition) {
         if (buff.remaining() < addition) {
@@ -45,9 +54,29 @@ public class UEncoder {
         return buff;
     }
 
+    private boolean isSafe(String str, int off) {
+        char ch = str.charAt(off);
+        if (ch < safeChars.size()) {
+            if (safeChars.get(off)) {
+                return true;
+            }
+            switch (ch) {
+                case '%':
+                    return off + 2 < str.length()
+                            && isHexDigit(str.charAt(off + 1))
+                            && isHexDigit(str.charAt(off + 2));
+                case '?':
+                    return true;
+                default:
+                    return false;
+            }
+        } else {
+            return false;
+        }
+    }
+
     String encode(String str) {
-        int off = 0;
-        final int end = str.length();
+        int off = 0, end = str.length();
         for (; off < end; ++off) {
             if (str.charAt(off) >= 128) {
                 break;
@@ -85,5 +114,42 @@ public class UEncoder {
             off = pos;
         }
         return out.flip().toString();
+    }
+
+    // -------------------- Internal implementation --------------------
+    private void initSafeChars() {
+        safeChars = new BitSet(128);
+        int i;
+        for (i = 'a'; i <= 'z'; i++) {
+            safeChars.set(i);
+        }
+        for (i = 'A'; i <= 'Z'; i++) {
+            safeChars.set(i);
+        }
+        for (i = '0'; i <= '9'; i++) {
+            safeChars.set(i);
+        }
+        //safe
+        safeChars.set('$');
+        safeChars.set('-');
+        safeChars.set('_');
+        safeChars.set('.');
+
+        // Dangerous: someone may treat this as " "
+        // RFC1738 does allow it, it's not reserved
+        //    safeChars.set('+');
+        //extra
+        safeChars.set('!');
+        safeChars.set('*');
+        safeChars.set('\'');
+        safeChars.set('(');
+        safeChars.set(')');
+        safeChars.set(',');
+    }
+
+    private boolean isHexDigit(char c) {
+        return ((c - '0' | '9' - c)
+                & (c - 'A' | 'F' - c)
+                & (c - 'a' | 'f' - c)) >= 0;
     }
 }
