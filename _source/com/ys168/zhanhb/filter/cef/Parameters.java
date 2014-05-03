@@ -19,6 +19,7 @@ package com.ys168.zhanhb.filter.cef;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -316,7 +317,8 @@ final class Parameters {
         try {
             return Charset.forName(encoding);
         } catch (UnsupportedCharsetException e) {
-            return DEFAULT_CHARSET;
+        } catch (IllegalCharsetNameException e) {
         }
+        return DEFAULT_CHARSET;
     }
 }

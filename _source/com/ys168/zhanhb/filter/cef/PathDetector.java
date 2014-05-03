@@ -19,6 +19,7 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
+import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.HashSet;
 import java.util.Set;
@@ -55,6 +56,8 @@ class PathDetector {
             } else if (object instanceof String) {
                 try {
                     charset = Charset.forName(encoding);
+                } catch (IllegalCharsetNameException e) {
+                    continue;
                 } catch (UnsupportedCharsetException ex) {
                     continue;
                 }
