@@ -16,8 +16,8 @@
 
 package com.ys168.zhanhb.filter.cef;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 
 /**
  * Action Context.
@@ -26,19 +26,19 @@ import javax.servlet.http.HttpServletResponse;
  */
 public final class ActionContext {
 
-    private final HttpServletRequest request;
-    private final HttpServletResponse response;
+    private final ServletRequest request;
+    private final ServletResponse response;
 
-    ActionContext(HttpServletRequest request, HttpServletResponse response) {
+    ActionContext(ServletRequest request, ServletResponse response) {
         this.request = request;
         this.response = response;
     }
 
-    public HttpServletRequest getRequest() {
+    public ServletRequest getRequest() {
         return request;
     }
 
-    public HttpServletResponse getResponse() {
+    public ServletResponse getResponse() {
         return response;
     }
 

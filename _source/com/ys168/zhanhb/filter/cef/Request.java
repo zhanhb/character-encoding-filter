@@ -30,7 +30,7 @@ import javax.servlet.http.HttpServletRequestWrapper;
  *
  * @author zhanhb
  */
-class Request extends HttpServletRequestWrapper {
+final class Request extends HttpServletRequestWrapper {
 
     private static final int CACHED_POST_LEN = 8192;
 
@@ -109,11 +109,13 @@ class Request extends HttpServletRequestWrapper {
 
     @Override
     public String getServletPath() {
+        // no cache
         return detector.detect(super.getServletPath(), getCharacterEncoding());
     }
 
     @Override
     public String getPathInfo() {
+        // no cgche
         return detector.detect(super.getPathInfo(), getCharacterEncoding());
     }
 
@@ -155,7 +157,7 @@ class Request extends HttpServletRequestWrapper {
         return len;
     }
 
-    private byte[] readChunkedPostBody() throws IOException {
+    private ByteBuffer readChunkedPostBody() throws IOException {
         InputStream inputStream = getInputStream0();
         if (inputStream == null) {
             return null;
@@ -179,15 +181,8 @@ class Request extends HttpServletRequestWrapper {
         if (body.position() == 0) {
             return null;
         }
-        if (body.position() < body.limit()) {
-            int length = body.position();
-            byte[] result = new byte[length];
-            body.flip();
-            body.get(result, 0, length);
-            return result;
-        } else {
-            return body.array();
-        }
+        body.flip();
+        return body;
     }
 
     private InputStream getInputStream0() {
@@ -207,15 +202,14 @@ class Request extends HttpServletRequestWrapper {
         }
         parametersParsed = true;
 
-        param.setQueryString(getQueryString())
-                // Set this every time in case limit has been changed via JMX
-                .setLimit(getConnector().getMaxParameterCount());
-
         // getCharacterEncoding() may have been overridden to search for
         // hidden form field containing request encoding
         String enc = getCharacterEncoding();
 
-        param.setEncoding(enc)
+        param.setQueryString(getQueryString())
+                // Set this every time in case limit has been changed via JMX
+                .setLimit(getConnector().getMaxParameterCount())
+                .setEncoding(enc)
                 .setQueryStringEncoding(enc)
                 .handleQueryParameters();
 
@@ -256,9 +250,9 @@ class Request extends HttpServletRequestWrapper {
                     // Client disconnect
                     return param;
                 }
-                param.processParameters(formData, 0, len);
+                param.processParameters(ByteBuffer.wrap(formData));
             } else if ("chunked".equalsIgnoreCase(getHeader("transfer-encoding"))) {
-                byte[] formData;
+                ByteBuffer formData;
                 try {
                     formData = readChunkedPostBody();
                 } catch (IOException e) {
@@ -266,7 +260,7 @@ class Request extends HttpServletRequestWrapper {
                     return param;
                 }
                 if (formData != null) {
-                    param.processParameters(formData, 0, formData.length);
+                    param.processParameters(formData);
                 }
             }
             success = true;

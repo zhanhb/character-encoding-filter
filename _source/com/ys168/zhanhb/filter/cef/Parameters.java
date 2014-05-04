@@ -19,8 +19,6 @@ package com.ys168.zhanhb.filter.cef;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.nio.charset.IllegalCharsetNameException;
-import java.nio.charset.UnsupportedCharsetException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -34,7 +32,7 @@ import java.util.Map;
  */
 final class Parameters {
 
-    private static final Charset DEFAULT_CHARSET = Constants.DEFAULT_CHARSET;
+    private static final Charset DEFAULT_CHARSET = CharsetFactory.ISO_8859_1;
 
     private final Map<String, ArrayList<String>> paramHashValues
             = new LinkedHashMap<String, ArrayList<String>>();
@@ -56,40 +54,40 @@ final class Parameters {
      */
     private boolean parseFailed = false;
 
-    Parameters setQueryString(String queryString) {
+    public Parameters setQueryString(String queryString) {
         this.queryString = queryString;
         return this;
     }
 
-    Parameters setLimit(int limit) {
+    public Parameters setLimit(int limit) {
         this.limit = limit;
         return this;
     }
 
-    String getEncoding() {
+    public String getEncoding() {
         return encoding;
     }
 
-    Parameters setEncoding(String s) {
+    public Parameters setEncoding(String s) {
         encoding = s;
         return this;
     }
 
-    Parameters setQueryStringEncoding(String s) {
+    public Parameters setQueryStringEncoding(String s) {
         queryStringEncoding = s;
         return this;
     }
 
-    boolean isParseFailed() {
+    public boolean isParseFailed() {
         return parseFailed;
     }
 
-    Parameters setParseFailed(boolean parseFailed) {
+    public Parameters setParseFailed(boolean parseFailed) {
         this.parseFailed = parseFailed;
         return this;
     }
 
-    Parameters recycle() {
+    public Parameters recycle() {
         parameterCount = 0;
         paramHashValues.clear();
         didQueryParameters = false;
@@ -98,7 +96,7 @@ final class Parameters {
         return this;
     }
 
-    String[] getParameterValues(String name) {
+    public String[] getParameterValues(String name) {
         handleQueryParameters();
         ArrayList<String> values = paramHashValues.get(name);
         if (values == null) {
@@ -107,12 +105,12 @@ final class Parameters {
         return values.toArray(new String[values.size()]);
     }
 
-    Enumeration<String> getParameterNames() {
+    public Enumeration<String> getParameterNames() {
         handleQueryParameters();
         return Collections.enumeration(paramHashValues.keySet());
     }
 
-    String getParameter(String name) {
+    public String getParameter(String name) {
         handleQueryParameters();
         ArrayList<String> values = paramHashValues.get(name);
         if (values != null) {
@@ -125,7 +123,7 @@ final class Parameters {
         }
     }
 
-    int size() {
+    public int size() {
         return paramHashValues.size();
     }
 
@@ -133,21 +131,21 @@ final class Parameters {
     /**
      * Process the query string into parameters
      */
-    Parameters handleQueryParameters() {
+    public Parameters handleQueryParameters() {
         if (didQueryParameters) {
             return this;
         }
 
         didQueryParameters = true;
 
-        if (queryString == null) {
+        if (queryString == null || queryString.length() == 0) {
             return this;
         }
 
-        return processParameters(DEFAULT_CHARSET.encode(queryString), queryStringEncoding);
+        return processParameters(DEFAULT_CHARSET.encode(queryString), getCharset(queryStringEncoding));
     }
 
-    Parameters addParameter(String key, String value)
+    private Parameters addParameter(String key, String value)
             throws IllegalStateException {
 
         if (key == null) {
@@ -171,19 +169,29 @@ final class Parameters {
         return this;
     }
 
-    Parameters setURLDecoder(UDecoder u) {
+    public Parameters setURLDecoder(UDecoder u) {
         urlDec = u;
         return this;
     }
 
-    Parameters processParameters(byte bytes[], int start, int len) {
-        return processParameters(bytes, start, len, getCharset(encoding));
+    public Parameters processParameters(ByteBuffer buff) {
+        return processParameters(buff, getCharset(encoding));
     }
 
-    private Parameters processParameters(byte bytes[], int start, int len,
-            Charset charset) {
-        int pos = start;
-        int end = start + len;
+    private ByteBuffer urlDecode(ByteBuffer bc)
+            throws IOException {
+        if (urlDec == null) {
+            urlDec = new UDecoder();
+        }
+        return urlDec.convert(bc);
+    }
+
+    private Parameters processParameters(ByteBuffer data, Charset charset) {
+        if (data == null || !data.hasRemaining()) {
+            return this;
+        }
+        int pos = data.position();
+        int end = data.limit();
 
         while (pos < end) {
             int nameStart = pos;
@@ -197,7 +205,7 @@ final class Parameters {
             boolean parameterComplete = false;
 
             do {
-                switch (bytes[pos]) {
+                switch (data.get(pos)) {
                     case '=':
                         if (parsingName) {
                             // Name finished. Value starts from next character
@@ -260,11 +268,13 @@ final class Parameters {
             final ByteBuffer tmpName;
             final ByteBuffer tmpValue;
 
-            tmpName = ByteBuffer.wrap(bytes, nameStart, nameEnd - nameStart);
+            tmpName = data.duplicate();
+            tmpName.limit(nameEnd).position(nameStart);
             if (valueStart >= 0) {
-                tmpValue = ByteBuffer.wrap(bytes, valueStart, valueEnd - valueStart);
+                tmpValue = data.duplicate();
+                tmpValue.limit(valueEnd).position(valueStart);
             } else {
-                tmpValue = ByteBuffer.wrap(bytes, 0, 0);
+                tmpValue = null;
             }
 
             try {
@@ -291,34 +301,11 @@ final class Parameters {
                 parseFailed = true;
             }
         }
+        data.position(end);
         return this;
     }
 
-    private ByteBuffer urlDecode(ByteBuffer bc)
-            throws IOException {
-        if (urlDec == null) {
-            urlDec = new UDecoder();
-        }
-        return urlDec.convert(bc);
-    }
-
-    Parameters processParameters(ByteBuffer data, String encoding) {
-        if (data == null || !data.hasRemaining()) {
-            return this;
-        }
-
-        return processParameters(data.array(), data.arrayOffset() + data.position(), data.remaining(), getCharset(encoding));
-    }
-
     private Charset getCharset(String encoding) {
-        if (encoding == null) {
-            return DEFAULT_CHARSET;
-        }
-        try {
-            return Charset.forName(encoding);
-        } catch (UnsupportedCharsetException e) {
-        } catch (IllegalCharsetNameException e) {
-        }
-        return DEFAULT_CHARSET;
+        return CharsetFactory.getCharset(encoding, DEFAULT_CHARSET);
     }
 }

@@ -19,8 +19,6 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
-import java.nio.charset.IllegalCharsetNameException;
-import java.nio.charset.UnsupportedCharsetException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -30,7 +28,7 @@ import java.util.Set;
  *
  * @author zhanhb
  */
-class PathDetector {
+final class PathDetector {
 
     String detect(String path, String encoding) {
         if (path == null || path.length() == 0) {
@@ -38,7 +36,7 @@ class PathDetector {
         }
         ByteBuffer bytes;
         try {
-            bytes = Constants.ISO_8859_1.newEncoder().encode(CharBuffer.wrap(path));
+            bytes = CharsetFactory.ISO_8859_1.newEncoder().encode(CharBuffer.wrap(path));
         } catch (CharacterCodingException ex) {
             // not latin bytes
             // Strings already parsed by the server
@@ -49,23 +47,14 @@ class PathDetector {
         // so we try UTF-8 first, then the character encoding set in request attribute
         // if failed we will try the system default encoding
         Set<Charset> set = new HashSet<Charset>(4);
-        for (Object object : new Object[]{Constants.UTF8, encoding, Charset.defaultCharset()}) {
-            final Charset charset;
+        for (Object object : new Object[]{CharsetFactory.UTF8, encoding, Charset.defaultCharset()}) {
+            Charset charset = null;
             if (object instanceof Charset) {
                 charset = (Charset) object;
             } else if (object instanceof String) {
-                try {
-                    charset = Charset.forName(encoding);
-                } catch (IllegalCharsetNameException e) {
-                    continue;
-                } catch (UnsupportedCharsetException ex) {
-                    continue;
-                }
-            } else {
-                // often null
-                continue;
+                charset = CharsetFactory.getCharset((String) object, null);
             }
-            if (set.contains(charset)) {
+            if (charset == null || set.contains(charset)) {
                 continue;
             }
             set.add(charset);

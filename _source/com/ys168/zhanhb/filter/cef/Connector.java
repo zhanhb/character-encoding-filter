@@ -21,6 +21,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -64,7 +66,7 @@ public final class Connector {
      *
      * @return
      */
-    int getMaxParameterCount() {
+    public int getMaxParameterCount() {
         return maxParameterCount;
     }
 
@@ -87,7 +89,7 @@ public final class Connector {
      *
      * @return
      */
-    int getMaxPostSize() {
+    public int getMaxPostSize() {
         return maxPostSize;
     }
 
@@ -127,14 +129,20 @@ public final class Connector {
         return this;
     }
 
-    boolean isParseBodyMethod(String method) {
+    public boolean isParseBodyMethod(String method) {
         if (parseBodyMethodsSet == null) {
             setParseBodyMethods(getParseBodyMethods());
         }
         return parseBodyMethodsSet.contains(method);
     }
 
-    public ActionContext createActionContext(HttpServletRequest req, HttpServletResponse resp) {
-        return new ActionContext(new Request(req).setConnector(this), resp);
+    public ActionContext createActionContext(ServletRequest req, ServletResponse resp) {
+        HttpServletRequest request;
+        try {
+            request = (HttpServletRequest) req;
+        } catch (ClassCastException ex) {
+            return new ActionContext(req, resp);
+        }
+        return new ActionContext(new Request(request).setConnector(this), resp);
     }
 }

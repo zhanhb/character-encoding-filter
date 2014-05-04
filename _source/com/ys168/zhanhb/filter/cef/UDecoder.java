@@ -47,7 +47,7 @@ final class UDecoder {
                 & (c - 'a' | 'f' - c)) >= 0;
     }
 
-    private static int x2c(byte b1, byte b2) {
+    private static int x2c(int b1, int b2) {
         return (((b1 & 0xF) + ((b1 & 0x40) != 0 ? 9 : 0)) << 4) | ((b2 & 0xF) + ((b2 & 0x40) != 0 ? 9 : 0));
     }
 
@@ -58,7 +58,7 @@ final class UDecoder {
      * @return a buffer encoded maybe the parameter itself is returned.
      * @throws java.io.IOException
      */
-    ByteBuffer convert(ByteBuffer buff) throws IOException {
+    public ByteBuffer convert(ByteBuffer buff) throws IOException {
         int idx = buff.position();
         int end = buff.limit();
         for (; idx < end; ++idx) {
