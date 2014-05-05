@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
- * All URL decoding happens here. This way we can reuse, review, optimize
+ * All parameter decoding happens here. This way we can reuse, review, optimize
  * without adding complexity to the buffers.
  *
  * The conversion will modify the original buffer.

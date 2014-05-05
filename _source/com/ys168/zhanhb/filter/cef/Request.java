@@ -115,11 +115,13 @@ final class Request extends HttpServletRequestWrapper {
 
     @Override
     public String getServletPath() {
-        String path = servletPath;
         String superServletPath = super.getServletPath();
+        if (superServletPath == null || superServletPath.length() == 0) {
+            return superServletPath;
+        }
+        String path = servletPath;
         // some servers such as glassfish may change the path during the request
-        if (path == null || (superServletPath == null ? expectedServletPath != null
-                : !superServletPath.equals(expectedServletPath))) {
+        if (path == null || !superServletPath.equals(expectedServletPath)) {
             path = detector.detect(superServletPath, getCharacterEncoding());
             servletPath = path;
             expectedServletPath = superServletPath;
@@ -131,8 +133,10 @@ final class Request extends HttpServletRequestWrapper {
     public String getPathInfo() {
         String path = pathInfo;
         String superPathInfo = super.getPathInfo();
-        if (path == null || (superPathInfo == null ? expectedPathInfo != null
-                : !superPathInfo.equals(expectedPathInfo))) {
+        if (superPathInfo == null || superPathInfo.length() == 0) {
+            return superPathInfo;
+        }
+        if (path == null || !superPathInfo.equals(expectedPathInfo)) {
             path = detector.detect(superPathInfo, getCharacterEncoding());
             pathInfo = path;
             expectedPathInfo = superPathInfo;
@@ -222,15 +226,13 @@ final class Request extends HttpServletRequestWrapper {
         }
     }
 
-    private void handlePreviousQueryStrings(Parameters param) {
+    private void handleAllQueryStrings(Parameters param) {
         ServletRequest request = this;
-        IdentityHashMap<Object, Boolean> dejaVu = new IdentityHashMap<Object, Boolean>();
 
         ArrayList<String> queryStrings = new ArrayList<String>();
-        for (;;) {
-            if (dejaVu.containsKey(request)) {
-                break;
-            }
+        for (IdentityHashMap<Object, Boolean> dejaVu = new IdentityHashMap<Object, Boolean>();
+                !dejaVu.containsKey(request);
+                request = ((ServletRequestWrapper) request).getRequest()) {
             dejaVu.put(request, Boolean.TRUE);
             if (request instanceof HttpServletRequest) {
                 HttpServletRequest hrequest = (HttpServletRequest) request;
@@ -244,7 +246,6 @@ final class Request extends HttpServletRequestWrapper {
             if (!(request instanceof ServletRequestWrapper)) {
                 break;
             }
-            request = ((ServletRequestWrapper) request).getRequest();
         }
         for (int i = queryStrings.size() - 1; i >= 0; --i) {
             param.handleQueryParameters(queryStrings.get(i));
@@ -264,7 +265,7 @@ final class Request extends HttpServletRequestWrapper {
         // getCharacterEncoding() may have been overridden to search for
         // hidden form field containing request encoding
         String enc = getCharacterEncoding();
-        handlePreviousQueryStrings(param.setEncoding(enc).setQueryStringEncoding(enc));
+        handleAllQueryStrings(param.setEncoding(enc).setQueryStringEncoding(enc));
 
         if (!getConnector().isParseBodyMethod(getMethod())) {
             return param;

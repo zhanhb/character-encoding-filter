@@ -26,16 +26,9 @@ import java.util.WeakHashMap;
  */
 final class CharsetFactory {
 
-    private static final Map<String, Charset> cache;
-
-    public static final Charset ISO_8859_1;
-    public static final Charset UTF8;
-
-    static {
-        cache = Collections.synchronizedMap(new WeakHashMap<String, Charset>());
-        ISO_8859_1 = lookup("ISO-8859-1");
-        UTF8 = lookup("UTF-8");
-    }
+    private static final Map<String, Charset> cache = Collections.synchronizedMap(new WeakHashMap<String, Charset>());
+    public static final Charset ISO_8859_1 = lookup("ISO-8859-1");
+    public static final Charset UTF8 = lookup("UTF-8");
 
     public static Charset getCharset(String enc, Charset defaultValue) {
         Charset charset = lookup(enc);

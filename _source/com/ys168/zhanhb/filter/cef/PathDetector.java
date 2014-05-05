@@ -30,7 +30,7 @@ import java.util.Set;
  */
 final class PathDetector {
 
-    String detect(String path, String encoding) {
+    public String detect(String path, String encoding) {
         if (path == null || path.length() == 0) {
             return path;
         }
@@ -47,13 +47,10 @@ final class PathDetector {
         // so we try UTF-8 first, then the character encoding set in request attribute
         // if failed we will try the system default encoding
         Set<Charset> set = new HashSet<Charset>(4);
-        for (Object object : new Object[]{CharsetFactory.UTF8, encoding, Charset.defaultCharset()}) {
-            Charset charset = null;
-            if (object instanceof Charset) {
-                charset = (Charset) object;
-            } else if (object instanceof String) {
-                charset = CharsetFactory.getCharset((String) object, null);
-            }
+        for (Charset charset : new Charset[]{
+            CharsetFactory.UTF8,
+            CharsetFactory.getCharset(encoding, null),
+            Charset.defaultCharset()}) {
             if (charset == null || set.contains(charset)) {
                 continue;
             }
