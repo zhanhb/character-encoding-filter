@@ -30,19 +30,14 @@ import javax.servlet.ServletRequestWrapper;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 
+/**
+ * Request facade.
+ *
+ * @author zhanhb
+ */
 final class Request extends HttpServletRequestWrapper {
 
     private static final int CACHED_POST_LEN = 8192;
-    private static final ThreadLocal<byte[]> bytesCache = new ThreadLocal<byte[]>();
-
-    private static byte[] newBytes(int len) {
-        byte[] bytes = bytesCache.get();
-        if (bytes == null || bytes.length < len) {
-            bytes = new byte[Math.max(len, CACHED_POST_LEN)];
-            bytesCache.set(bytes);
-        }
-        return bytes;
-    }
 
     private Map<String, String[]> parameterMap;
     private boolean parametersParsed;
@@ -196,7 +191,7 @@ final class Request extends HttpServletRequestWrapper {
         }
         ByteBuffer body = ByteBuffer.allocate(256);
 
-        byte[] buffer = newBytes(CACHED_POST_LEN);
+        byte[] buffer = new byte[CACHED_POST_LEN];
 
         int len;
         do {
@@ -296,7 +291,7 @@ final class Request extends HttpServletRequestWrapper {
                 if ((maxPostSize > 0) && (len > maxPostSize)) {
                     return param;
                 }
-                byte[] formData = newBytes(len);
+                byte[] formData = new byte[len];
 
                 try {
                     if (readPostBody(formData, len) != len) {

@@ -72,7 +72,7 @@ public class CharacterEncodingFilter implements Filter {
         if (characterEncoding != null) {
             context.getRequest().setCharacterEncoding(characterEncoding);
             if (setResponseCharacterEncoding) {
-                context.getRequest().setCharacterEncoding(characterEncoding);
+                context.getResponse().setCharacterEncoding(characterEncoding);
             }
         }
         chain.doFilter(context.getRequest(), context.getResponse());
