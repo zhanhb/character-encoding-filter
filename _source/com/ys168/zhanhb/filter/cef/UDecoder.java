@@ -48,7 +48,7 @@ final class UDecoder {
     }
 
     private static int x2c(int b1, int b2) {
-        return (((b1 & 0xF) + ((b1 & 0x40) != 0 ? 9 : 0)) << 4) | ((b2 & 0xF) + ((b2 & 0x40) != 0 ? 9 : 0));
+        return (((b1 > 0x40 ? b1 + 9 : b1) & 0xF) << 4) | ((b2 > 0x40 ? 9 + b2 : b2) & 0xF);
     }
 
     /**

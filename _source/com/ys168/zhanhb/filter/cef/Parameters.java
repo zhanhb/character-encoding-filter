@@ -18,6 +18,8 @@ package com.ys168.zhanhb.filter.cef;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -37,9 +39,6 @@ final class Parameters {
     private final Map<String, ArrayList<String>> paramHashValues
             = new LinkedHashMap<String, ArrayList<String>>();
 
-    private boolean didQueryParameters = false;
-
-    private String queryString;
     private UDecoder urlDec;
 
     private String encoding = null;
@@ -53,11 +52,6 @@ final class Parameters {
      * parsing.
      */
     private boolean parseFailed = false;
-
-    public Parameters setQueryString(String queryString) {
-        this.queryString = queryString;
-        return this;
-    }
 
     public Parameters setLimit(int limit) {
         this.limit = limit;
@@ -90,14 +84,12 @@ final class Parameters {
     public Parameters recycle() {
         parameterCount = 0;
         paramHashValues.clear();
-        didQueryParameters = false;
         encoding = null;
         parseFailed = false;
         return this;
     }
 
     public String[] getParameterValues(String name) {
-        handleQueryParameters();
         ArrayList<String> values = paramHashValues.get(name);
         if (values == null) {
             return null;
@@ -106,12 +98,10 @@ final class Parameters {
     }
 
     public Enumeration<String> getParameterNames() {
-        handleQueryParameters();
         return Collections.enumeration(paramHashValues.keySet());
     }
 
     public String getParameter(String name) {
-        handleQueryParameters();
         ArrayList<String> values = paramHashValues.get(name);
         if (values != null) {
             /*if (values.isEmpty()) { // will never happen
@@ -131,18 +121,17 @@ final class Parameters {
     /**
      * Process the query string into parameters
      */
-    public Parameters handleQueryParameters() {
-        if (didQueryParameters) {
-            return this;
-        }
-
-        didQueryParameters = true;
-
+    public Parameters handleQueryParameters(String queryString) {
         if (queryString == null || queryString.length() == 0) {
             return this;
         }
-
-        return processParameters(DEFAULT_CHARSET.encode(queryString), getCharset(queryStringEncoding));
+        ByteBuffer query;
+        try {
+            query = DEFAULT_CHARSET.newEncoder().encode(CharBuffer.wrap(queryString));
+        } catch (CharacterCodingException ex) {
+            query = getCharset(queryStringEncoding).encode(queryString);
+        }
+        return processParameters(query, getCharset(queryStringEncoding));
     }
 
     private Parameters addParameter(String key, String value)
@@ -163,9 +152,11 @@ final class Parameters {
         ArrayList<String> values = paramHashValues.get(key);
         if (values == null) {
             values = new ArrayList<String>(1);
+            values.add(value);
             paramHashValues.put(key, values);
+        } else {
+            values.add(value);
         }
-        values.add(value);
         return this;
     }
 
@@ -269,10 +260,10 @@ final class Parameters {
             final ByteBuffer tmpValue;
 
             tmpName = data.duplicate();
-            tmpName.limit(nameEnd).position(nameStart);
+            tmpName.position(nameStart).limit(nameEnd);
             if (valueStart >= 0) {
                 tmpValue = data.duplicate();
-                tmpValue.limit(valueEnd).position(valueStart);
+                tmpValue.position(valueStart).limit(valueEnd);
             } else {
                 tmpValue = null;
             }

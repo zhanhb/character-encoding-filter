@@ -65,10 +65,10 @@ public class CharacterEncodingFilter implements Filter {
     }
 
     @Override
-    public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain)
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
         // Create action context and do the chain
-        ActionContext context = connector.createActionContext(req, resp);
+        ActionContext context = connector.createActionContext(request, response);
         if (characterEncoding != null) {
             context.getRequest().setCharacterEncoding(characterEncoding);
             if (setResponseCharacterEncoding) {

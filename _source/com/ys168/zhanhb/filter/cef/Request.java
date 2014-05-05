@@ -17,28 +17,39 @@ package com.ys168.zhanhb.filter.cef;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Map;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletRequestWrapper;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 
-/**
- * Request facade.
- *
- * @author zhanhb
- */
 final class Request extends HttpServletRequestWrapper {
 
     private static final int CACHED_POST_LEN = 8192;
+    private static final ThreadLocal<byte[]> bytesCache = new ThreadLocal<byte[]>();
+
+    private static byte[] newBytes(int len) {
+        byte[] bytes = bytesCache.get();
+        if (bytes == null || bytes.length < len) {
+            bytes = new byte[Math.max(len, CACHED_POST_LEN)];
+            bytesCache.set(bytes);
+        }
+        return bytes;
+    }
 
     private Map<String, String[]> parameterMap;
     private boolean parametersParsed;
     private final Parameters parameters;
     private final PathDetector detector;
     private Connector connector;
+    private String servletPath, pathInfo, expectedServletPath, expectedPathInfo;
 
     Request(HttpServletRequest request) {
         super(request);
@@ -109,36 +120,57 @@ final class Request extends HttpServletRequestWrapper {
 
     @Override
     public String getServletPath() {
-        // no cache
-        return detector.detect(super.getServletPath(), getCharacterEncoding());
+        String path = servletPath;
+        String superServletPath = super.getServletPath();
+        // some servers such as glassfish may change the path during the request
+        if (path == null || (superServletPath == null ? expectedServletPath != null
+                : !superServletPath.equals(expectedServletPath))) {
+            path = detector.detect(superServletPath, getCharacterEncoding());
+            servletPath = path;
+            expectedServletPath = superServletPath;
+        }
+        return path;
     }
 
     @Override
     public String getPathInfo() {
-        // no cgche
-        return detector.detect(super.getPathInfo(), getCharacterEncoding());
+        String path = pathInfo;
+        String superPathInfo = super.getPathInfo();
+        if (path == null || (superPathInfo == null ? expectedPathInfo != null
+                : !superPathInfo.equals(expectedPathInfo))) {
+            path = detector.detect(superPathInfo, getCharacterEncoding());
+            pathInfo = path;
+            expectedPathInfo = superPathInfo;
+        }
+        return path;
+    }
+
+    @Override
+    public void setCharacterEncoding(String enc) throws UnsupportedEncodingException {
+        super.setCharacterEncoding(enc);
+        servletPath = null;
+        pathInfo = null;
     }
 
     private Connector getConnector() {
         return connector;
     }
 
-    private ByteBuffer ensureCapacity(ByteBuffer buff, int addition) {
-        if (buff.remaining() < addition) {
-            int oldSize = buff.limit();
-            int newSize;
+    private ByteBuffer ensureCapacity(ByteBuffer buffer, int addition) {
+        if (buffer.remaining() < addition) {
+            int oldSize = buffer.limit(), newSize;
             // grow in larger chunks
-            if (buff.position() + addition < (oldSize << 1)) {
+            if (buffer.position() + addition < (oldSize << 1)) {
                 newSize = oldSize << 1;
             } else {
                 newSize = (oldSize << 1) + addition;
             }
-            buff.flip();
-            return (buff.isDirect()
+            buffer.flip();
+            return (buffer.isDirect()
                     ? ByteBuffer.allocateDirect(newSize)
-                    : ByteBuffer.allocate(newSize)).put(buff);
+                    : ByteBuffer.allocate(newSize)).put(buffer);
         }
-        return buff;
+        return buffer;
     }
 
     private int readPostBody(byte[] body, int len) throws IOException {
@@ -164,7 +196,7 @@ final class Request extends HttpServletRequestWrapper {
         }
         ByteBuffer body = ByteBuffer.allocate(256);
 
-        byte[] buffer = new byte[CACHED_POST_LEN];
+        byte[] buffer = newBytes(CACHED_POST_LEN);
 
         int len;
         do {
@@ -195,6 +227,35 @@ final class Request extends HttpServletRequestWrapper {
         }
     }
 
+    private void handlePreviousQueryStrings(Parameters param) {
+        ServletRequest request = this;
+        IdentityHashMap<Object, Boolean> dejaVu = new IdentityHashMap<Object, Boolean>();
+
+        ArrayList<String> queryStrings = new ArrayList<String>();
+        for (;;) {
+            if (dejaVu.containsKey(request)) {
+                break;
+            }
+            dejaVu.put(request, Boolean.TRUE);
+            if (request instanceof HttpServletRequest) {
+                HttpServletRequest hrequest = (HttpServletRequest) request;
+                String query = hrequest.getQueryString();
+                if (query != null && !dejaVu.containsKey(query)) {
+                    dejaVu.put(query, Boolean.TRUE);
+                    queryStrings.add(query);
+                }
+            }
+
+            if (!(request instanceof ServletRequestWrapper)) {
+                break;
+            }
+            request = ((ServletRequestWrapper) request).getRequest();
+        }
+        for (int i = queryStrings.size() - 1; i >= 0; --i) {
+            param.handleQueryParameters(queryStrings.get(i));
+        }
+    }
+
     private Parameters parseParameters() {
         Parameters param = this.parameters;
         if (parametersParsed) {
@@ -202,25 +263,20 @@ final class Request extends HttpServletRequestWrapper {
         }
         parametersParsed = true;
 
+        // Set this every time in case limit has been changed via JMX
+        param.setLimit(getConnector().getMaxParameterCount());
+
         // getCharacterEncoding() may have been overridden to search for
         // hidden form field containing request encoding
         String enc = getCharacterEncoding();
-
-        param.setQueryString(getQueryString())
-                // Set this every time in case limit has been changed via JMX
-                .setLimit(getConnector().getMaxParameterCount())
-                .setEncoding(enc)
-                .setQueryStringEncoding(enc)
-                .handleQueryParameters();
+        handlePreviousQueryStrings(param.setEncoding(enc).setQueryStringEncoding(enc));
 
         if (!getConnector().isParseBodyMethod(getMethod())) {
             return param;
         }
 
         String contentType = getContentType();
-        if (contentType == null) {
-            contentType = "";
-        } else {
+        if (contentType != null) {
             int semicolon = contentType.indexOf(';');
             if (semicolon >= 0) {
                 contentType = contentType.substring(0, semicolon);
@@ -240,7 +296,7 @@ final class Request extends HttpServletRequestWrapper {
                 if ((maxPostSize > 0) && (len > maxPostSize)) {
                     return param;
                 }
-                byte[] formData = new byte[len];
+                byte[] formData = newBytes(len);
 
                 try {
                     if (readPostBody(formData, len) != len) {
@@ -250,7 +306,7 @@ final class Request extends HttpServletRequestWrapper {
                     // Client disconnect
                     return param;
                 }
-                param.processParameters(ByteBuffer.wrap(formData));
+                param.processParameters(ByteBuffer.wrap(formData, 0, len));
             } else if ("chunked".equalsIgnoreCase(getHeader("transfer-encoding"))) {
                 ByteBuffer formData;
                 try {

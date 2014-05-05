@@ -24,7 +24,7 @@ import javax.servlet.ServletResponse;
  *
  * @author zhanhb
  */
-public final class ActionContext {
+public class ActionContext {
 
     private final ServletRequest request;
     private final ServletResponse response;
