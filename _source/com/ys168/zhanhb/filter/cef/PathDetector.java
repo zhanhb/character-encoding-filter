@@ -48,7 +48,7 @@ final class PathDetector {
         // if failed we will try the system default encoding
         Set<Charset> set = new HashSet<Charset>(4);
         for (Charset charset : new Charset[]{
-            CharsetFactory.UTF8,
+            CharsetFactory.UTF_8,
             CharsetFactory.getCharset(encoding, null),
             Charset.defaultCharset()}) {
             if (charset == null || set.contains(charset)) {
@@ -57,7 +57,7 @@ final class PathDetector {
             set.add(charset);
             int position = bytes.position();
             try {
-                return charset.newDecoder().decode(bytes).toString();
+                return CharsetFactory.newDecoder(charset).decode(bytes).toString();
             } catch (CharacterCodingException ex) {
                 // rollback
                 bytes.position(position);

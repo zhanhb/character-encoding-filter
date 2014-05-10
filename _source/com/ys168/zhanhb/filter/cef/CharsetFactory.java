@@ -16,6 +16,7 @@
 package com.ys168.zhanhb.filter.cef;
 
 import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
 import java.util.Collections;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -28,7 +29,7 @@ final class CharsetFactory {
 
     private static final Map<String, Charset> cache = Collections.synchronizedMap(new WeakHashMap<String, Charset>());
     public static final Charset ISO_8859_1 = lookup("ISO-8859-1");
-    public static final Charset UTF8 = lookup("UTF-8");
+    public static final Charset UTF_8 = lookup("UTF-8");
 
     public static Charset getCharset(String enc, Charset defaultValue) {
         Charset charset = lookup(enc);
@@ -52,6 +53,10 @@ final class CharsetFactory {
             // unsupport charset
         }
         return null;
+    }
+
+    public static CharsetDecoder newDecoder(Charset charset) {
+        return UTF_8.equals(charset) ? new UTF8Decoder() : charset.newDecoder();
     }
 
     private CharsetFactory() {
