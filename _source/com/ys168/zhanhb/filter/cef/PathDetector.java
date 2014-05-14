@@ -36,7 +36,7 @@ final class PathDetector {
         }
         ByteBuffer bytes;
         try {
-            bytes = CharsetFactory.ISO_8859_1.newEncoder().encode(CharBuffer.wrap(path));
+            bytes = CharsetFactory.newEncoder(CharsetFactory.ISO_8859_1).encode(CharBuffer.wrap(path));
         } catch (CharacterCodingException ex) {
             // not latin bytes
             // Strings already parsed by the server

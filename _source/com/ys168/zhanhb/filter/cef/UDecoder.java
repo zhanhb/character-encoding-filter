@@ -62,7 +62,7 @@ final class UDecoder {
         int idx = buff.position();
         int end = buff.limit();
         for (; idx < end; ++idx) {
-            byte b = buff.get(idx);
+            int b = buff.get(idx);
             if (b == '+') {
                 buff.put(idx, (byte) ' ');
                 continue;
@@ -73,25 +73,28 @@ final class UDecoder {
         }
         // idx will be the smallest positive index of % or end
         for (int j = idx; j < end; j++, idx++) {
-            byte b = buff.get(j);
-            if (b == '%') {
-                // read next 2 digits
-                if (j + 2 >= end) {
-                    throw EXCEPTION_EOF;
-                }
-                byte b1 = buff.get(j + 1);
-                byte b2 = buff.get(j + 2);
-                if (!isHexDigit(b1) || !isHexDigit(b2)) {
-                    throw EXCEPTION_NOT_HEX_DIGIT;
-                }
+            int b = buff.get(j);
+            switch (b) {
+                case '%':
+                    // read next 2 digits
+                    if (j + 2 >= end) {
+                        throw EXCEPTION_EOF;
+                    }
+                    byte b1 = buff.get(j + 1);
+                    byte b2 = buff.get(j + 2);
+                    if (!isHexDigit(b1) || !isHexDigit(b2)) {
+                        throw EXCEPTION_NOT_HEX_DIGIT;
+                    }
 
-                j += 2;
-                int res = x2c(b1, b2);
-                buff.put(idx, (byte) res);
-            } else if (b == '+') {
-                buff.put(idx, (byte) ' ');
-            } else {
-                buff.put(idx, b);
+                    j += 2;
+                    int res = x2c(b1, b2);
+                    buff.put(idx, (byte) res);
+                    break;
+                case '+':
+                    buff.put(idx, (byte) ' ');
+                    break;
+                default:
+                    buff.put(idx, (byte) b);
             }
         }
         buff.limit(idx);

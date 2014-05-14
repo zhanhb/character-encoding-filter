@@ -16,15 +16,16 @@
 package com.ys168.zhanhb.filter.cef;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import javax.servlet.ServletInputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletRequestWrapper;
 import javax.servlet.http.HttpServletRequest;
@@ -37,14 +38,13 @@ import javax.servlet.http.HttpServletRequestWrapper;
  */
 final class Request extends HttpServletRequestWrapper {
 
-    private static final int CACHED_POST_LEN = 8192;
-
     private Map<String, String[]> parameterMap;
     private boolean parametersParsed;
     private final Parameters parameters;
     private final PathDetector detector;
     private Connector connector;
-    private String servletPath, pathInfo, expectedServletPath, expectedPathInfo;
+    private String servletPath, expectedServletPath, expectedServletPathEncoding;
+    private String pathInfo, expectedPathInfo, expectedPathInfoEncoding;
 
     Request(HttpServletRequest request) {
         super(request);
@@ -119,11 +119,16 @@ final class Request extends HttpServletRequestWrapper {
         if (superServletPath == null || superServletPath.length() == 0) {
             return superServletPath;
         }
+        String characterEncoding = getCharacterEncoding();
         String path = servletPath;
         // some servers such as glassfish may change the path during the request
-        if (path == null || !superServletPath.equals(expectedServletPath)) {
+        if (path == null || !superServletPath.equals(expectedServletPath)
+                || (characterEncoding == null
+                ? expectedServletPathEncoding != null
+                : !characterEncoding.equals(expectedServletPathEncoding))) {
             path = detector.detect(superServletPath, getCharacterEncoding());
             servletPath = path;
+            expectedServletPathEncoding = characterEncoding;
             expectedServletPath = superServletPath;
         }
         return path;
@@ -136,19 +141,17 @@ final class Request extends HttpServletRequestWrapper {
         if (superPathInfo == null || superPathInfo.length() == 0) {
             return superPathInfo;
         }
-        if (path == null || !superPathInfo.equals(expectedPathInfo)) {
+        String characterEncoding = getCharacterEncoding();
+        if (path == null || !superPathInfo.equals(expectedPathInfo)
+                || (characterEncoding == null
+                ? expectedPathInfoEncoding != null
+                : !characterEncoding.equals(expectedPathInfoEncoding))) {
             path = detector.detect(superPathInfo, getCharacterEncoding());
             pathInfo = path;
+            expectedPathInfoEncoding = characterEncoding;
             expectedPathInfo = superPathInfo;
         }
         return path;
-    }
-
-    @Override
-    public void setCharacterEncoding(String enc) throws UnsupportedEncodingException {
-        super.setCharacterEncoding(enc);
-        servletPath = null;
-        pathInfo = null;
     }
 
     private Connector getConnector() {
@@ -173,39 +176,41 @@ final class Request extends HttpServletRequestWrapper {
     }
 
     private int readPostBody(byte[] body, int len) throws IOException {
-        InputStream inputStream = getInputStream0();
+        if (len == 0) {
+            return 0;
+        }
+        ReadableByteChannel inputStream = getInputChannel();
         if (inputStream == null) {
             return -1;
         }
         int offset = 0;
+        ByteBuffer buff = ByteBuffer.wrap(body, 0, len);
         do {
-            int inputLen = inputStream.read(body, offset, len - offset);
+            int inputLen = inputStream.read(buff);
             if (inputLen < 0) {
                 return offset;
             }
             offset += inputLen;
         } while ((len - offset) > 0);
-        return len;
+        return buff.position();
     }
 
     private ByteBuffer readChunkedPostBody() throws IOException {
-        InputStream inputStream = getInputStream0();
-        if (inputStream == null) {
+        ReadableByteChannel channel = getInputChannel();
+        if (channel == null) {
             return null;
         }
         ByteBuffer body = ByteBuffer.allocate(256);
 
-        byte[] buffer = new byte[CACHED_POST_LEN];
-
         int len;
         do {
-            len = inputStream.read(buffer, 0, CACHED_POST_LEN);
-            if (connector.getMaxPostSize() > 0 && (body.position() + len) > connector.getMaxPostSize()) {
+            len = channel.read(body);
+            if (connector.getMaxPostSize() > 0 && (body.position()) > connector.getMaxPostSize()) {
                 // Too much data
                 throw new IOException(); // sm.getString("coyoteRequest.chunkedPostTooLarge")
             }
             if (len > 0) {
-                body = ensureCapacity(body, len).put(buffer, 0, len);
+                body = ensureCapacity(body, len);
             }
         } while (len > -1);
 
@@ -216,9 +221,13 @@ final class Request extends HttpServletRequestWrapper {
         return body;
     }
 
-    private InputStream getInputStream0() {
+    private ReadableByteChannel getInputChannel() {
         try {
-            return getInputStream();
+            ServletInputStream inputStream = getInputStream();
+            if (inputStream == null) {
+                return null;
+            }
+            return Channels.newChannel(inputStream);
         } catch (IllegalStateException ex) {
             return null;
         } catch (IOException ex) {

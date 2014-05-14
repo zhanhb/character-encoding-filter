@@ -15,8 +15,13 @@
  */
 package com.ys168.zhanhb.filter.cef;
 
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CharsetEncoder;
+import java.nio.charset.CodingErrorAction;
 import java.util.Collections;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -56,7 +61,33 @@ final class CharsetFactory {
     }
 
     public static CharsetDecoder newDecoder(Charset charset) {
-        return UTF_8.equals(charset) ? new UTF8Decoder() : charset.newDecoder();
+        return charset.newDecoder();
+    }
+
+    public static CharsetEncoder newEncoder(Charset charset) {
+        return charset.newEncoder();
+    }
+
+    public static ByteBuffer encode(Charset charset, String str) {
+        try {
+            return newEncoder(charset)
+                    .onMalformedInput(CodingErrorAction.REPLACE)
+                    .onUnmappableCharacter(CodingErrorAction.REPLACE)
+                    .encode(CharBuffer.wrap(str));
+        } catch (CharacterCodingException ex) {
+            throw new Error(ex);
+        }
+    }
+
+    public static CharBuffer decode(Charset charset, ByteBuffer byteBuffer) {
+        try {
+            return newDecoder(charset)
+                    .onMalformedInput(CodingErrorAction.REPLACE)
+                    .onUnmappableCharacter(CodingErrorAction.REPLACE)
+                    .decode(byteBuffer);
+        } catch (CharacterCodingException ex) {
+            throw new Error(ex);
+        }
     }
 
     private CharsetFactory() {
