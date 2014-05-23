@@ -54,9 +54,10 @@ final class UDecoder {
     /**
      * URLDecode, will modify the source.
      *
-     * @param mb
+     * @param buff a buffer to be encoded.
      * @return a buffer encoded maybe the parameter itself is returned.
-     * @throws java.io.IOException
+     * @throws java.io.IOException Unexpected end of data or %xx with not-hex
+     * digit.
      */
     public ByteBuffer convert(ByteBuffer buff) throws IOException {
         int idx = buff.position();

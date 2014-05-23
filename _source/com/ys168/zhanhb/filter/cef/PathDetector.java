@@ -36,7 +36,7 @@ final class PathDetector {
         }
         ByteBuffer bytes;
         try {
-            bytes = CharsetFactory.newEncoder(CharsetFactory.ISO_8859_1).encode(CharBuffer.wrap(path));
+            bytes = CharsetFactory.ISO_8859_1.newEncoder().encode(CharBuffer.wrap(path));
         } catch (CharacterCodingException ex) {
             // not latin bytes
             // Strings already parsed by the server
@@ -50,14 +50,15 @@ final class PathDetector {
         for (Charset charset : new Charset[]{
             CharsetFactory.UTF_8,
             CharsetFactory.getCharset(encoding, null),
-            Charset.defaultCharset()}) {
+            Charset.defaultCharset()
+        }) {
             if (charset == null || set.contains(charset)) {
                 continue;
             }
             set.add(charset);
             int position = bytes.position();
             try {
-                return CharsetFactory.newDecoder(charset).decode(bytes).toString();
+                return charset.newDecoder().decode(bytes).toString();
             } catch (CharacterCodingException ex) {
                 // rollback
                 bytes.position(position);

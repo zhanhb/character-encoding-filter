@@ -25,6 +25,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.Set;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletRequestWrapper;
@@ -39,18 +40,15 @@ import javax.servlet.http.HttpServletRequestWrapper;
 final class Request extends HttpServletRequestWrapper {
 
     private Map<String, String[]> parameterMap;
-    private boolean parametersParsed;
-    private final Parameters parameters;
-    private final PathDetector detector;
+    private boolean parametersParsed = false;
+    private final Parameters parameters = new Parameters().setURLDecoder(new UDecoder());
+    private final PathDetector detector = new PathDetector();
     private Connector connector;
     private String servletPath, expectedServletPath, expectedServletPathEncoding;
     private String pathInfo, expectedPathInfo, expectedPathInfoEncoding;
 
     Request(HttpServletRequest request) {
         super(request);
-        this.parametersParsed = false;
-        this.parameters = new Parameters().setURLDecoder(new UDecoder());
-        this.detector = new PathDetector();
     }
 
     /**
@@ -59,7 +57,7 @@ final class Request extends HttpServletRequestWrapper {
      * only the first one.
      *
      * @param name Name of the desired request parameter
-     * @return
+     * @return the value of the specified request parameter
      */
     @Override
     public String getParameter(String name) {
@@ -78,10 +76,8 @@ final class Request extends HttpServletRequestWrapper {
     @Override
     public Map<String, String[]> getParameterMap() {
         if (parameterMap == null) {
+            HashMap<String, String[]> map = new HashMap<String, String[]>(parseParameters().size());
             Enumeration<String> parameterNames = getParameterNames();
-            // after statement getParameterNames the parameter will be parsed
-            // parameters.size() will be exactly the parameter size.
-            HashMap<String, String[]> map = new HashMap<String, String[]>(parameters.size());
             while (parameterNames.hasMoreElements()) {
                 String name = parameterNames.nextElement();
                 String[] values = getParameterValues(name);
@@ -106,7 +102,7 @@ final class Request extends HttpServletRequestWrapper {
      * otherwise, return <code>null</code>.
      *
      * @param name Name of the desired request parameter
-     * @return
+     * @return the defined values for the specified request parameter
      */
     @Override
     public String[] getParameterValues(String name) {
@@ -229,30 +225,28 @@ final class Request extends HttpServletRequestWrapper {
             }
             return Channels.newChannel(inputStream);
         } catch (IllegalStateException ex) {
-            return null;
         } catch (IOException ex) {
-            return null;
         }
+        return null;
     }
 
     private void handleAllQueryStrings(Parameters param) {
         ServletRequest request = this;
 
         ArrayList<String> queryStrings = new ArrayList<String>();
-        for (IdentityHashMap<Object, Boolean> dejaVu = new IdentityHashMap<Object, Boolean>();
-                !dejaVu.containsKey(request);
+        for (Set<Object> dejaVu = Collections.newSetFromMap(new IdentityHashMap<Object, Boolean>());;
                 request = ((ServletRequestWrapper) request).getRequest()) {
-            dejaVu.put(request, Boolean.TRUE);
+            dejaVu.add(request);
             if (request instanceof HttpServletRequest) {
                 HttpServletRequest hrequest = (HttpServletRequest) request;
                 String query = hrequest.getQueryString();
-                if (query != null && !dejaVu.containsKey(query)) {
-                    dejaVu.put(query, Boolean.TRUE);
+                if (query != null && !dejaVu.contains(query)) {
+                    dejaVu.add(query);
                     queryStrings.add(query);
                 }
             }
 
-            if (!(request instanceof ServletRequestWrapper)) {
+            if (!(request instanceof ServletRequestWrapper) || dejaVu.contains(request)) {
                 break;
             }
         }

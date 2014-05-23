@@ -16,9 +16,7 @@
 package com.ys168.zhanhb.filter.cef;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import javax.servlet.ServletRequest;
@@ -63,7 +61,8 @@ public final class Connector {
      * automatically parsed by the container. A value of less than 0 means no
      * limit.
      *
-     * @return
+     * @return the maximum number of parameters (GET plus POST) that will be
+     * automatically parsed by the container.
      */
     public int getMaxParameterCount() {
         return maxParameterCount;
@@ -86,7 +85,8 @@ public final class Connector {
      * Return the maximum size of a POST which will be automatically parsed by
      * the container.
      *
-     * @return
+     * @return the maximum size of a POST which will be automatically parsed by
+     * the container.
      */
     public int getMaxPostSize() {
         return maxPostSize;
@@ -111,17 +111,16 @@ public final class Connector {
 
     public Connector setParseBodyMethods(String methods) {
         Set<String> methodSet;
-        if (null != methods) {
-            List<String> list = Arrays.asList(methods.split(","));
-            methodSet = new HashSet<String>(list.size());
-            for (String string : list) {
-                methodSet.add(string.trim().toUpperCase(Locale.ENGLISH));
-            }
-            if (methodSet.contains("TRACE")) {
-                throw new IllegalArgumentException("TRACE method MUST NOT include an entity (see RFC 2616 Section 9.6)");
-            }
-        } else {
-            methodSet = Collections.emptySet();
+        methodSet = new HashSet<String>(
+                Arrays.asList(
+                        (methods != null ? methods : "")
+                        .trim()
+                        .toUpperCase(Locale.ENGLISH)
+                        .split("\\s*,\\s*")
+                )
+        );
+        if (methodSet.contains("TRACE")) {
+            throw new IllegalArgumentException("TRACE method MUST NOT include an entity (see RFC 2616 Section 9.6)");
         }
         this.parseBodyMethods = methods;
         this.parseBodyMethodsSet = methodSet;
@@ -135,13 +134,9 @@ public final class Connector {
         return parseBodyMethodsSet.contains(method);
     }
 
-    public ActionContext createActionContext(ServletRequest req, ServletResponse resp) {
-        HttpServletRequest request;
-        try {
-            request = (HttpServletRequest) req;
-        } catch (ClassCastException ex) {
-            return new ActionContext(req, resp);
-        }
-        return new ActionContext(new Request(request).setConnector(this), resp);
+    public ActionContext createActionContext(ServletRequest request, ServletResponse response) {
+        return new ActionContext(request instanceof HttpServletRequest
+                ? new Request((HttpServletRequest) request).setConnector(this)
+                : request, response);
     }
 }

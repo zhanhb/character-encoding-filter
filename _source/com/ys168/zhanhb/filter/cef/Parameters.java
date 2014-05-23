@@ -119,6 +119,9 @@ final class Parameters {
     // -------------------- Processing --------------------
     /**
      * Process the query string into parameters
+     *
+     * @param queryString query string to handle.
+     * @return the parameter itself
      */
     public Parameters handleQueryParameters(String queryString) {
         if (queryString == null || queryString.length() == 0) {
@@ -126,9 +129,9 @@ final class Parameters {
         }
         ByteBuffer query;
         try {
-            query = CharsetFactory.newEncoder(DEFAULT_CHARSET).encode(CharBuffer.wrap(queryString));
+            query = DEFAULT_CHARSET.newEncoder().encode(CharBuffer.wrap(queryString));
         } catch (CharacterCodingException ex) {
-            query = CharsetFactory.encode(getCharset(queryStringEncoding), queryString);
+            query = getCharset(queryStringEncoding).encode(queryString);
         }
         return processParameters(query, getCharset(queryStringEncoding));
     }
@@ -182,7 +185,6 @@ final class Parameters {
         }
         int pos = data.position();
         int end = data.limit();
-
         while (pos < end) {
             int nameStart = pos;
             int nameEnd = -1;
@@ -194,7 +196,7 @@ final class Parameters {
             boolean decodeValue = false;
             boolean parameterComplete = false;
 
-            for (; !parameterComplete && pos < end;) {
+            for (; !parameterComplete && pos < end; pos++) {
                 switch (data.get(pos)) {
                     case '=':
                         if (parsingName) {
@@ -228,7 +230,6 @@ final class Parameters {
                     default:
                         break;
                 }
-                pos++;
             }
 
             if (pos == end) {
@@ -251,29 +252,17 @@ final class Parameters {
                 // invalid chunk - it's better to ignore
             }
 
-            final ByteBuffer tmpName;
-            final ByteBuffer tmpValue;
+            final ByteBuffer tmpName = data.duplicate();
+            final ByteBuffer tmpValue = data.duplicate();
 
-            tmpName = data.duplicate();
             tmpName.position(nameStart).limit(nameEnd);
             if (valueStart >= 0) {
-                tmpValue = data.duplicate();
                 tmpValue.position(valueStart).limit(valueEnd);
-            } else {
-                tmpValue = null;
             }
 
             try {
-                String name;
-                String value;
-
-                name = CharsetFactory.decode(charset, decodeName ? urlDecode(tmpName) : tmpName).toString();
-
-                if (valueStart >= 0) {
-                    value = CharsetFactory.decode(charset, decodeValue ? urlDecode(tmpValue) : tmpValue).toString();
-                } else {
-                    value = "";
-                }
+                String name = charset.decode(decodeName ? urlDecode(tmpName) : tmpName).toString();
+                String value = valueStart >= 0 ? charset.decode(decodeValue ? urlDecode(tmpValue) : tmpValue).toString() : "";
 
                 try {
                     addParameter(name, value);
