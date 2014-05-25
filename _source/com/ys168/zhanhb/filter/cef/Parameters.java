@@ -162,8 +162,8 @@ final class Parameters {
         return this;
     }
 
-    public Parameters setURLDecoder(UDecoder u) {
-        urlDec = u;
+    public Parameters setURLDecoder(UDecoder urlDec) {
+        this.urlDec = urlDec;
         return this;
     }
 
@@ -171,12 +171,12 @@ final class Parameters {
         return processParameters(buff, getCharset(encoding));
     }
 
-    private ByteBuffer urlDecode(ByteBuffer bc)
+    private ByteBuffer urlDecode(ByteBuffer buff)
             throws IOException {
         if (urlDec == null) {
             urlDec = new UDecoder();
         }
-        return urlDec.convert(bc);
+        return urlDec.convert(buff);
     }
 
     private Parameters processParameters(ByteBuffer data, Charset charset) {
@@ -252,17 +252,17 @@ final class Parameters {
                 // invalid chunk - it's better to ignore
             }
 
-            final ByteBuffer tmpName = data.duplicate();
-            final ByteBuffer tmpValue = data.duplicate();
+            final ByteBuffer nameBuf = data.duplicate();
+            final ByteBuffer valueBuf = data.duplicate();
 
-            tmpName.position(nameStart).limit(nameEnd);
+            nameBuf.position(nameStart).limit(nameEnd);
             if (valueStart >= 0) {
-                tmpValue.position(valueStart).limit(valueEnd);
+                valueBuf.position(valueStart).limit(valueEnd);
             }
 
             try {
-                String name = charset.decode(decodeName ? urlDecode(tmpName) : tmpName).toString();
-                String value = valueStart >= 0 ? charset.decode(decodeValue ? urlDecode(tmpValue) : tmpValue).toString() : "";
+                String name = charset.decode(decodeName ? urlDecode(nameBuf) : nameBuf).toString();
+                String value = valueStart >= 0 ? charset.decode(decodeValue ? urlDecode(valueBuf) : valueBuf).toString() : "";
 
                 try {
                     addParameter(name, value);
