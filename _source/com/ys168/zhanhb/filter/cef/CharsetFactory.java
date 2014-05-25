@@ -35,8 +35,7 @@ final class CharsetFactory {
     private static Charset lookup(String enc) {
         try {
             if (enc != null && Charset.isSupported(enc)) {
-                Charset charset = Charset.forName(enc);
-                return charset;
+                return Charset.forName(enc);
             }
         } catch (IllegalArgumentException ex) {
             // illegal charset name

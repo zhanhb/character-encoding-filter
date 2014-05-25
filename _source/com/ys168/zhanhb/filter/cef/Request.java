@@ -25,7 +25,6 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
-import java.util.Set;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletRequestWrapper;
@@ -46,6 +45,7 @@ final class Request extends HttpServletRequestWrapper {
     private Connector connector;
     private String servletPath, expectedServletPath, expectedServletPathEncoding;
     private String pathInfo, expectedPathInfo, expectedPathInfoEncoding;
+    private boolean useInputStream;
 
     Request(HttpServletRequest request) {
         super(request);
@@ -120,9 +120,9 @@ final class Request extends HttpServletRequestWrapper {
         // some servers such as glassfish may change the path during the request
         if (path == null || !superServletPath.equals(expectedServletPath)
                 || (characterEncoding == null
-                ? expectedServletPathEncoding != null
-                : !characterEncoding.equals(expectedServletPathEncoding))) {
-            path = detector.detect(superServletPath, getCharacterEncoding());
+                        ? expectedServletPathEncoding != null
+                        : !characterEncoding.equals(expectedServletPathEncoding))) {
+            path = detector.detect(superServletPath, characterEncoding);
             servletPath = path;
             expectedServletPathEncoding = characterEncoding;
             expectedServletPath = superServletPath;
@@ -140,14 +140,20 @@ final class Request extends HttpServletRequestWrapper {
         String characterEncoding = getCharacterEncoding();
         if (path == null || !superPathInfo.equals(expectedPathInfo)
                 || (characterEncoding == null
-                ? expectedPathInfoEncoding != null
-                : !characterEncoding.equals(expectedPathInfoEncoding))) {
-            path = detector.detect(superPathInfo, getCharacterEncoding());
+                        ? expectedPathInfoEncoding != null
+                        : !characterEncoding.equals(expectedPathInfoEncoding))) {
+            path = detector.detect(superPathInfo, characterEncoding);
             pathInfo = path;
             expectedPathInfoEncoding = characterEncoding;
             expectedPathInfo = superPathInfo;
         }
         return path;
+    }
+
+    @Override
+    public ServletInputStream getInputStream() throws IOException {
+        useInputStream = true;
+        return super.getInputStream(); //To change body of generated methods, choose Tools | Templates.
     }
 
     private Connector getConnector() {
@@ -175,19 +181,13 @@ final class Request extends HttpServletRequestWrapper {
         if (len == 0) {
             return 0;
         }
-        ReadableByteChannel inputStream = getInputChannel();
-        if (inputStream == null) {
+        ReadableByteChannel channel = getInputChannel();
+        if (channel == null) {
             return -1;
         }
-        int offset = 0;
         ByteBuffer buff = ByteBuffer.wrap(body, 0, len);
-        do {
-            int inputLen = inputStream.read(buff);
-            if (inputLen < 0) {
-                return offset;
-            }
-            offset += inputLen;
-        } while ((len - offset) > 0);
+        for (; buff.hasRemaining() && channel.read(buff) >= 0;) {
+        }
         return buff.position();
     }
 
@@ -219,11 +219,12 @@ final class Request extends HttpServletRequestWrapper {
 
     private ReadableByteChannel getInputChannel() {
         try {
-            ServletInputStream inputStream = getInputStream();
-            if (inputStream == null) {
-                return null;
+            if (!useInputStream) {
+                ServletInputStream inputStream = super.getInputStream();
+                if (inputStream != null) {
+                    return Channels.newChannel(inputStream);
+                }
             }
-            return Channels.newChannel(inputStream);
         } catch (IllegalStateException ex) {
         } catch (IOException ex) {
         }
@@ -234,19 +235,20 @@ final class Request extends HttpServletRequestWrapper {
         ServletRequest request = this;
 
         ArrayList<String> queryStrings = new ArrayList<String>();
-        for (Set<Object> dejaVu = Collections.newSetFromMap(new IdentityHashMap<Object, Boolean>());;
-                request = ((ServletRequestWrapper) request).getRequest()) {
-            dejaVu.add(request);
+        for (IdentityHashMap<Object, Boolean> dejaVu = new IdentityHashMap<Object, Boolean>();
+                !dejaVu.containsKey(request);) {
+            dejaVu.put(request, Boolean.TRUE);
             if (request instanceof HttpServletRequest) {
                 HttpServletRequest hrequest = (HttpServletRequest) request;
                 String query = hrequest.getQueryString();
-                if (query != null && !dejaVu.contains(query)) {
-                    dejaVu.add(query);
+                if (query != null && !dejaVu.containsKey(query)) {
+                    dejaVu.put(query, Boolean.TRUE);
                     queryStrings.add(query);
                 }
             }
-
-            if (!(request instanceof ServletRequestWrapper) || dejaVu.contains(request)) {
+            try {
+                request = ServletRequestWrapper.class.cast(request).getRequest();
+            } catch (ClassCastException ex) {
                 break;
             }
         }

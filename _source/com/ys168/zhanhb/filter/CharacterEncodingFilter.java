@@ -15,7 +15,6 @@
  */
 package com.ys168.zhanhb.filter;
 
-import com.ys168.zhanhb.filter.cef.ActionContext;
 import com.ys168.zhanhb.filter.cef.Connector;
 import java.io.IOException;
 import javax.servlet.Filter;
@@ -58,25 +57,27 @@ public class CharacterEncodingFilter implements Filter {
             conn.setMaxParameterCount(Integer.parseInt(str.trim()));
         }
         this.connector = conn;
-        str = filterConfig.getInitParameter("setResponseCharacterEncoding");
+        str = filterConfig.getInitParameter("setResponseEncoding");
         if (str != null) {
             setResponseCharacterEncoding = Boolean.parseBoolean(str.trim());
+        } else {
+            str = filterConfig.getInitParameter("setResponseCharacterEncoding");
+            if (str != null) {
+                setResponseCharacterEncoding = Boolean.parseBoolean(str.trim());
+            }
         }
     }
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
-        // Create action context and do the chain
-        ActionContext context = connector.createActionContext(request, response);
         if (characterEncoding != null) {
-            context.getRequest().setCharacterEncoding(characterEncoding);
+            request.setCharacterEncoding(characterEncoding);
             if (setResponseCharacterEncoding) {
-                context.getResponse().setCharacterEncoding(characterEncoding);
+                response.setCharacterEncoding(characterEncoding);
             }
         }
-        chain.doFilter(context.getRequest(), context.getResponse());
-        context.recycle();
+        chain.doFilter(connector.createRequest(request), response);
     }
 
     @Override
