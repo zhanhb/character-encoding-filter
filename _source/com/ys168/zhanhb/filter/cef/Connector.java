@@ -20,7 +20,6 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 
 /**
@@ -134,9 +133,9 @@ public final class Connector {
         return parseBodyMethodsSet.contains(method);
     }
 
-    public ActionContext createActionContext(ServletRequest request, ServletResponse response) {
-        return new ActionContext(request instanceof HttpServletRequest
+    public ServletRequest createRequest(ServletRequest request) {
+        return request instanceof HttpServletRequest
                 ? new Request((HttpServletRequest) request).setConnector(this)
-                : request, response);
+                : request;
     }
 }
