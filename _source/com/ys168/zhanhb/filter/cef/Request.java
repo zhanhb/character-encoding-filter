@@ -235,14 +235,9 @@ final class Request extends HttpServletRequestWrapper {
         ServletRequest request = this;
 
         ArrayList<String> queryStrings = new ArrayList<String>();
-<<<<<<< HEAD
         for (IdentityHashMap<Object, Boolean> dejaVu = new IdentityHashMap<Object, Boolean>();
                 !dejaVu.containsKey(request);) {
             dejaVu.put(request, Boolean.TRUE);
-=======
-        for (Set<Object> dejaVu = Collections.newSetFromMap(new IdentityHashMap<Object, Boolean>());;) {
-            dejaVu.add(request);
->>>>>>> d9a424423dacf20d17d64cc1d67a4e6e01d38eda
             if (request instanceof HttpServletRequest) {
                 HttpServletRequest hrequest = (HttpServletRequest) request;
                 String query = hrequest.getQueryString();
@@ -254,12 +249,6 @@ final class Request extends HttpServletRequestWrapper {
             try {
                 request = ServletRequestWrapper.class.cast(request).getRequest();
             } catch (ClassCastException ex) {
-<<<<<<< HEAD
-=======
-                break;
-            }
-            if (dejaVu.contains(request)) {
->>>>>>> d9a424423dacf20d17d64cc1d67a4e6e01d38eda
                 break;
             }
         }
