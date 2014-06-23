@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ys168.zhanhb.filter.cef;
+package com.ys168.zhanhb.filter.encoding;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -123,15 +123,19 @@ final class Parameters {
      * @param queryString query string to handle.
      * @return the parameter itself
      */
-    public Parameters handleQueryParameters(String queryString) {
+    public Parameters handleQueryParameters(String queryString, boolean useQueryStringEncoding) {
         if (queryString == null || queryString.length() == 0) {
             return this;
         }
         ByteBuffer query;
-        try {
-            query = DEFAULT_CHARSET.newEncoder().encode(CharBuffer.wrap(queryString));
-        } catch (CharacterCodingException ex) {
+        if (useQueryStringEncoding) {
             query = getCharset(queryStringEncoding).encode(queryString);
+        } else {
+            try {
+                query = DEFAULT_CHARSET.newEncoder().encode(CharBuffer.wrap(queryString));
+            } catch (CharacterCodingException ex) {
+                query = getCharset(queryStringEncoding).encode(queryString);
+            }
         }
         return processParameters(query, getCharset(queryStringEncoding));
     }

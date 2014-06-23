@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ys168.zhanhb.filter.cef;
+package com.ys168.zhanhb.filter.encoding;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -134,8 +134,12 @@ public final class Connector {
     }
 
     public ServletRequest createRequest(ServletRequest request) {
-        return request instanceof HttpServletRequest
-                ? new Request((HttpServletRequest) request).setConnector(this)
-                : request;
+        HttpServletRequest hrequest;
+        try {
+            hrequest = HttpServletRequest.class.cast(request);
+        } catch (ClassCastException ex) {
+            return request;
+        }
+        return new Request(hrequest).setConnector(this);
     }
 }

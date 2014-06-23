@@ -15,7 +15,7 @@
  */
 package com.ys168.zhanhb.filter;
 
-import com.ys168.zhanhb.filter.cef.Connector;
+import com.ys168.zhanhb.filter.encoding.Connector;
 import java.io.IOException;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;

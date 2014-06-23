@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ys168.zhanhb.filter.cef;
+package com.ys168.zhanhb.filter.encoding;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -75,8 +75,9 @@ final class Request extends HttpServletRequestWrapper {
      */
     @Override
     public Map<String, String[]> getParameterMap() {
-        if (parameterMap == null) {
-            HashMap<String, String[]> map = new HashMap<String, String[]>(parseParameters().size());
+        Map<String, String[]> map = parameterMap;
+        if (map == null) {
+            map = new HashMap<String, String[]>(parseParameters().size());
             Enumeration<String> parameterNames = getParameterNames();
             while (parameterNames.hasMoreElements()) {
                 String name = parameterNames.nextElement();
@@ -85,7 +86,7 @@ final class Request extends HttpServletRequestWrapper {
             }
             parameterMap = map;
         }
-        return Collections.unmodifiableMap(parameterMap);
+        return Collections.unmodifiableMap(map);
     }
 
     /**
@@ -239,8 +240,7 @@ final class Request extends HttpServletRequestWrapper {
                 !dejaVu.containsKey(request);) {
             dejaVu.put(request, Boolean.TRUE);
             if (request instanceof HttpServletRequest) {
-                HttpServletRequest hrequest = (HttpServletRequest) request;
-                String query = hrequest.getQueryString();
+                String query = HttpServletRequest.class.cast(request).getQueryString();
                 if (query != null && !dejaVu.containsKey(query)) {
                     dejaVu.put(query, Boolean.TRUE);
                     queryStrings.add(query);
@@ -253,7 +253,7 @@ final class Request extends HttpServletRequestWrapper {
             }
         }
         for (int i = queryStrings.size() - 1; i >= 0; --i) {
-            param.handleQueryParameters(queryStrings.get(i));
+            param.handleQueryParameters(queryStrings.get(i), i != 0);
         }
     }
 
@@ -321,12 +321,12 @@ final class Request extends HttpServletRequestWrapper {
                 }
             }
             success = true;
+            return param;
         } finally {
             if (!success) {
                 param.setParseFailed(true);
             }
         }
-        return param;
     }
 
     Request setConnector(Connector connector) {

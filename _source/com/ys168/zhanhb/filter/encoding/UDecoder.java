@@ -1,20 +1,19 @@
 /*
- *  Licensed to the Apache Software Foundation (ASF) under one or more
- *  contributor license agreements.  See the NOTICE file distributed with
- *  this work for additional information regarding copyright ownership.
- *  The ASF licenses this file to You under the Apache License, Version 2.0
- *  (the "License"); you may not use this file except in compliance with
- *  the License.  You may obtain a copy of the License at
+ * Copyright 2014 zhanhb.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-package com.ys168.zhanhb.filter.cef;
+package com.ys168.zhanhb.filter.encoding;
 
 import java.io.CharConversionException;
 import java.io.IOException;
@@ -42,9 +41,9 @@ final class UDecoder {
             "isHexDigit");
 
     private static boolean isHexDigit(int c) {
-        return ((c - '0' | '9' - c)
-                & (c - 'A' | 'F' - c)
-                & (c - 'a' | 'f' - c)) >= 0;
+        return (c - '0' | '9' - c) >= 0
+                || (c - 'A' | 'F' - c) >= 0
+                || (c - 'a' | 'f' - c) >= 0;
     }
 
     private static int x2c(int b1, int b2) {
@@ -88,15 +87,15 @@ final class UDecoder {
                     }
 
                     j += 2;
-                    int res = x2c(b1, b2);
-                    buff.put(idx, (byte) res);
+                    b = x2c(b1, b2);
                     break;
                 case '+':
-                    buff.put(idx, (byte) ' ');
+                    b = ' ';
                     break;
                 default:
-                    buff.put(idx, (byte) b);
+                    break;
             }
+            buff.put(idx, (byte) b);
         }
         buff.limit(idx);
         return buff;
