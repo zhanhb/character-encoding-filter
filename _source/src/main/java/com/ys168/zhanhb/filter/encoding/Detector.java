@@ -28,9 +28,14 @@ import java.util.Set;
  *
  * @author zhanhb
  */
-final class PathDetector {
+@SuppressWarnings("FinalClass")
+final class Detector {
 
-    public String detect(String path, String encoding) {
+    private String expectPath;
+    private String expectEncoding;
+    private String result;
+
+    private String detect(String path, String encoding) {
         if (path == null || path.length() == 0) {
             return path;
         }
@@ -63,6 +68,24 @@ final class PathDetector {
                 // rollback
                 bytes.position(position);
             }
+        }
+        return path;
+    }
+
+    public String expr(String superPath, String characterEncoding) {
+        if (superPath == null || superPath.length() == 0) {
+            return superPath;
+        }
+        String path = result;
+        // some servers such as glassfish may change the path during the request
+        if (path == null || !superPath.equals(expectPath)
+                || (characterEncoding == null
+                        ? expectEncoding != null
+                        : !characterEncoding.equals(expectEncoding))) {
+            path = detect(superPath, characterEncoding);
+            result = path;
+            expectEncoding = characterEncoding;
+            expectPath = superPath;
         }
         return path;
     }

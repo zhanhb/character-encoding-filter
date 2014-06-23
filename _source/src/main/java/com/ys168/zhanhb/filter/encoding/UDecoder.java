@@ -27,6 +27,7 @@ import java.nio.ByteBuffer;
  *
  * @author zhanhb
  */
+@SuppressWarnings({"FinalClass", "ClassWithoutLogger", "UtilityClassWithoutPrivateConstructor"})
 final class UDecoder {
 
     /**
@@ -58,7 +59,7 @@ final class UDecoder {
      * @throws java.io.IOException Unexpected end of data or %xx with not-hex
      * digit.
      */
-    public ByteBuffer convert(ByteBuffer buff) throws IOException {
+    public static ByteBuffer convert(ByteBuffer buff) throws IOException {
         int idx = buff.position();
         int end = buff.limit();
         for (; idx < end; ++idx) {
