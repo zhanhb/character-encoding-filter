@@ -41,7 +41,6 @@ final class Request extends HttpServletRequestWrapper {
     private Map<String, String[]> parameterMap;
     private boolean parametersParsed = false;
     private final Parameters parameters = new Parameters();
-    private final Detector detector = new Detector();
     private Connector connector;
     private final Detector pathDetector = new Detector();
     private final Detector pathInfoDetector = new Detector();

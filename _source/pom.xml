@@ -1,16 +1,46 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>org.sonatype.oss</groupId>
+        <artifactId>oss-parent</artifactId>
+        <version>9</version>
+    </parent>
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.ys168.zhanhb</groupId>
     <artifactId>character-encoding-filter</artifactId>
     <version>2.1.6</version>
     <packaging>jar</packaging>
+    <name>character encoding filter</name>
+    <url>https://github.com/zhanhb/character-encoding-filter/</url>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.jooq.org/inc/LICENSE.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <scm>
+        <connection>scm:git:https://raw.githubusercontent.com/zhanhb/character-encoding-filter/master/_source/</connection>
+        <developerConnection>scm:git:https://raw.githubusercontent.com/zhanhb/character-encoding-filter/master/_source/</developerConnection>
+        <url>https://raw.githubusercontent.com/zhanhb/character-encoding-filter/master/_source/</url>
+    </scm>
+
+    <developers>
+        <developer>
+            <name>Huangbin Zhan</name>
+            <id>zhanhb</id>
+            <email>zhanhb88@gmail.com</email>
+            <organization>Zhejiang Normal University</organization>
+        </developer>
+    </developers>
 
     <dependencies>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.10</version>
+            <version>4.12</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -20,6 +50,7 @@
             <scope>provided</scope>
         </dependency>
     </dependencies>
+
     <build>
         <plugins>
             <plugin>
