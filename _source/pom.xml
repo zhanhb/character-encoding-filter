@@ -6,6 +6,7 @@
     <version>2.1.6</version>
     <packaging>jar</packaging>
     <name>character-encoding-filter</name>
+    <url>https://github.com/zhanhb/character-encoding-filter/</url>
 
     <developers>
         <developer>
@@ -44,6 +45,7 @@
             </plugin>
         </plugins>
     </build>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.6</maven.compiler.source>
