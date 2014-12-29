@@ -8,6 +8,7 @@
             <goal>package</goal>
             <goal>javadoc:jar</goal>
             <goal>source:jar</goal>
+            <goal>install</goal>
         </goals>
     </action>
 </actions>

@@ -249,16 +249,16 @@ final class Parameters {
             }
 
             final ByteBuffer nameBuf = data.duplicate();
-            final ByteBuffer valueBuf = data.duplicate();
+            final ByteBuffer valueBuf = valueStart >= 0 ? data.duplicate() : null;
 
             nameBuf.position(nameStart).limit(nameEnd);
-            if (valueStart >= 0) {
+            if (valueBuf != null) {
                 valueBuf.position(valueStart).limit(valueEnd);
             }
 
             try {
                 String name = charset.decode(decodeName ? urlDecode(nameBuf) : nameBuf).toString();
-                String value = valueStart >= 0 ? charset.decode(decodeValue ? urlDecode(valueBuf) : valueBuf).toString() : "";
+                String value = valueBuf != null ? charset.decode(decodeValue ? urlDecode(valueBuf) : valueBuf).toString() : "";
 
                 try {
                     addParameter(name, value);
