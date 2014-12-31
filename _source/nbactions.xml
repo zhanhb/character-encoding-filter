@@ -6,9 +6,15 @@
         <goals>
             <goal>clean</goal>
             <goal>package</goal>
-            <goal>javadoc:jar</goal>
             <goal>source:jar</goal>
+            <goal>javadoc:jar</goal>
             <goal>install</goal>
         </goals>
+        <properties>
+            <gpg.passphrase>zhanhb8@qq.com</gpg.passphrase>
+        </properties>
+        <activatedProfiles>
+            <activatedProfile>release</activatedProfile>
+        </activatedProfiles>
     </action>
 </actions>
