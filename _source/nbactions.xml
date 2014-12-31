@@ -9,6 +9,7 @@
             <goal>source:jar</goal>
             <goal>javadoc:jar</goal>
             <goal>install</goal>
+            <goal>deploy</goal>
         </goals>
         <properties>
             <gpg.passphrase>zhanhb8@qq.com</gpg.passphrase>

@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ys168.zhanhb.filter.encoding;
+package com.github.zhanhb.filter.encoding;
 
+import com.github.zhanhb.filter.encoding.CharsetFactory;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
