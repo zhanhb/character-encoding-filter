@@ -8,7 +8,6 @@
             <goal>package</goal>
             <goal>source:jar</goal>
             <goal>javadoc:jar</goal>
-            <goal>install</goal>
             <goal>deploy</goal>
         </goals>
         <properties>
