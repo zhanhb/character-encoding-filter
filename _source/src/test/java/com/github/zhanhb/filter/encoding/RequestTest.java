@@ -15,7 +15,6 @@
  */
 package com.github.zhanhb.filter.encoding;
 
-import com.github.zhanhb.filter.encoding.CharsetFactory;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
