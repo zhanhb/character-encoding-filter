@@ -155,8 +155,7 @@ final class Request extends HttpServletRequestWrapper {
             return -1;
         }
         ByteBuffer buff = ByteBuffer.wrap(body, 0, len);
-        for (; buff.hasRemaining() && channel.read(buff) >= 0;) {
-        }
+        while (buff.hasRemaining() && channel.read(buff) >= 0);
         return buff.position();
     }
 
@@ -209,14 +208,14 @@ final class Request extends HttpServletRequestWrapper {
                 !dejaVu.containsKey(request);) {
             dejaVu.put(request, Boolean.TRUE);
             if (request instanceof HttpServletRequest) {
-                String query = HttpServletRequest.class.cast(request).getQueryString();
+                String query = ((HttpServletRequest) request).getQueryString();
                 if (query != null && !dejaVu.containsKey(query)) {
                     dejaVu.put(query, Boolean.TRUE);
                     queryStrings.add(query);
                 }
             }
             try {
-                request = ServletRequestWrapper.class.cast(request).getRequest();
+                request = ((ServletRequestWrapper) request).getRequest();
             } catch (ClassCastException ex) {
                 break;
             }

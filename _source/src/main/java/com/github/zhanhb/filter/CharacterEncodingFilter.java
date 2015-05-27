@@ -34,7 +34,7 @@ public class CharacterEncodingFilter implements Filter {
 
     private String characterEncoding = "UTF-8";
     private Connector connector;
-    private boolean setResponseCharacterEncoding = true;
+    private boolean setResponseCharacterEncoding = false;
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
@@ -44,13 +44,12 @@ public class CharacterEncodingFilter implements Filter {
         if (str != null) {
             characterEncoding = str;
         } else {
-            @SuppressWarnings("unchecked")
             Enumeration<String> e = filterConfig.getInitParameterNames();
             while (e.hasMoreElements()) {
                 String name = e.nextElement();
                 if (name != null) {
-                    String lowerCase = name.toUpperCase();
-                    if (!lowerCase.contains("RESPONSE") && lowerCase.contains("ENCODING")) {
+                    String upperCase = name.toUpperCase();
+                    if (!upperCase.contains("RESPONSE") && upperCase.contains("ENCODING")) {
                         characterEncoding = filterConfig.getInitParameter(name);
                         break;
                     }
@@ -76,9 +75,15 @@ public class CharacterEncodingFilter implements Filter {
         if (str != null) {
             setResponseCharacterEncoding = Boolean.parseBoolean(str.trim());
         } else {
-            str = filterConfig.getInitParameter("setResponseCharacterEncoding");
-            if (str != null) {
-                setResponseCharacterEncoding = Boolean.parseBoolean(str.trim());
+            Enumeration<String> e = filterConfig.getInitParameterNames();
+            while (e.hasMoreElements()) {
+                String name = e.nextElement();
+                if (name != null) {
+                    String upperCase = name.toUpperCase();
+                    if (upperCase.contains("ENCODING") && upperCase.contains("RESPONSE")) {
+                        setResponseCharacterEncoding = Boolean.parseBoolean(upperCase.trim());
+                    }
+                }
             }
         }
     }
@@ -86,10 +91,11 @@ public class CharacterEncodingFilter implements Filter {
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
-        if (characterEncoding != null) {
-            request.setCharacterEncoding(characterEncoding);
+        String enc = this.characterEncoding;
+        if (enc != null) {
+            request.setCharacterEncoding(enc);
             if (setResponseCharacterEncoding) {
-                response.setCharacterEncoding(characterEncoding);
+                response.setCharacterEncoding(enc);
             }
         }
         chain.doFilter(connector.createRequest(request), response);
