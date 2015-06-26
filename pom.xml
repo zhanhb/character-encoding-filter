@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.github.zhanhb</groupId>
     <artifactId>character-encoding-filter</artifactId>
-    <version>2.1.6.2-SNAPSHOT</version>
+    <version>2.1.6.2</version>
     <packaging>jar</packaging>
     <name>character-encoding-filter</name>
     <url>https://github.com/zhanhb/character-encoding-filter/</url>
@@ -49,7 +49,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>2.5.1</version>
+                <version>3.3</version>
                 <configuration>
                     <debug>false</debug>
                     <showDeprecation>true</showDeprecation>
