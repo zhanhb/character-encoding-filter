@@ -16,10 +16,14 @@
 package com.github.zhanhb.filter.encoding;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.UnsupportedCharsetException;
+import javax.servlet.http.HttpServletRequest;
 import org.junit.Test;
 
 public class RequestTest {
@@ -50,5 +54,22 @@ public class RequestTest {
         System.out.println(gg(new String(bytes, "ISO-8859-1")));
         ByteBuffer wrap = ByteBuffer.wrap(bytes);
         System.out.println(ISO_8859_1.newDecoder().decode(wrap));
+    }
+
+    @Test
+    public void testProxy() {
+        System.out.println("testProxy");
+        Object proxy = Proxy.newProxyInstance(RequestTest.class.getClassLoader(), new Class<?>[]{HttpServletRequest.class}, new InvocationHandler() {
+
+            @Override
+            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                System.out.println(method.getName());
+                if (method.getName().equals("getClass")) {
+                    return RequestTest.class;
+                }
+                return null;
+            }
+        });
+        System.out.println(proxy.getClass());
     }
 }

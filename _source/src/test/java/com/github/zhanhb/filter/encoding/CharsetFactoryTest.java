@@ -22,5 +22,5 @@ package com.github.zhanhb.filter.encoding;
 public class CharsetFactoryTest {
 
     // http://tools.ietf.org/html/rfc3629#section-4
-    
+
 }

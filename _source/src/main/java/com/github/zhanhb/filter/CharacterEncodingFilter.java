@@ -18,6 +18,7 @@ package com.github.zhanhb.filter;
 import com.github.zhanhb.filter.encoding.Connector;
 import java.io.IOException;
 import java.util.Enumeration;
+import java.util.Locale;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -33,76 +34,53 @@ import javax.servlet.ServletResponse;
 public class CharacterEncodingFilter implements Filter {
 
     private String characterEncoding = "UTF-8";
-    private Connector connector;
     private boolean setResponseCharacterEncoding = false;
+    private Connector connector;
 
-    @Override
-    public void init(FilterConfig filterConfig) throws ServletException {
-        Connector conn = new Connector();
+    public CharacterEncodingFilter() {
+        this("UTF-8");
+    }
 
-        String str = filterConfig.getInitParameter("characterEncoding");
-        if (str != null) {
-            characterEncoding = str;
-        } else {
-            Enumeration<String> e = filterConfig.getInitParameterNames();
-            while (e.hasMoreElements()) {
-                String name = e.nextElement();
-                if (name != null) {
-                    String upperCase = name.toUpperCase();
-                    if (!upperCase.contains("RESPONSE") && upperCase.contains("ENCODING")) {
-                        characterEncoding = filterConfig.getInitParameter(name);
-                        break;
-                    }
-                }
-            }
-        }
-
-        str = filterConfig.getInitParameter("parseBodyMethods");
-        if (str == null) {
-            str = conn.getParseBodyMethods();
-        }
-        conn.setParseBodyMethods(str);
-        str = filterConfig.getInitParameter("maxPostSize");
-        if (str != null) {
-            conn.setMaxPostSize(Integer.parseInt(str.trim()));
-        }
-        str = filterConfig.getInitParameter("maxParameterCount");
-        if (str != null) {
-            conn.setMaxParameterCount(Integer.parseInt(str.trim()));
-        }
-        this.connector = conn;
-        str = filterConfig.getInitParameter("setResponseEncoding");
-        if (str != null) {
-            setResponseCharacterEncoding = Boolean.parseBoolean(str.trim());
-        } else {
-            Enumeration<String> e = filterConfig.getInitParameterNames();
-            while (e.hasMoreElements()) {
-                String name = e.nextElement();
-                if (name != null) {
-                    String upperCase = name.toUpperCase();
-                    if (upperCase.contains("ENCODING") && upperCase.contains("RESPONSE")) {
-                        setResponseCharacterEncoding = Boolean.parseBoolean(upperCase.trim());
-                    }
-                }
-            }
-        }
+    public CharacterEncodingFilter(String characterEncoding) {
+        this.connector = new Connector();
+        this.characterEncoding = characterEncoding;
     }
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
-        String enc = this.characterEncoding;
-        if (enc != null) {
-            request.setCharacterEncoding(enc);
-            if (setResponseCharacterEncoding) {
-                response.setCharacterEncoding(enc);
+        ServletRequest createRequest = connector.createRequest(request);
+        createRequest.setCharacterEncoding(characterEncoding);
+        if (setResponseCharacterEncoding) {
+            response.setCharacterEncoding(characterEncoding);
+        }
+        chain.doFilter(createRequest, response);
+    }
+
+    public void setCharacterEncoding(String characterEncoding) {
+        this.characterEncoding = characterEncoding;
+    }
+
+    @Override
+    public void init(FilterConfig filterConfig) throws ServletException {
+        Enumeration<?> e = filterConfig.getInitParameterNames();
+        while (e.hasMoreElements()) {
+            String name = e.nextElement().toString();
+            String upperCase = name.toUpperCase(Locale.US);
+            if (upperCase.contains("ENCODING")) {
+                String value = filterConfig.getInitParameter(name);
+                if (value != null) {
+                    if (upperCase.contains("RESPONSE")) {
+                        setResponseCharacterEncoding = Boolean.parseBoolean(value);
+                    } else {
+                        setCharacterEncoding(value);
+                    }
+                }
             }
         }
-        chain.doFilter(connector.createRequest(request), response);
     }
 
     @Override
     public void destroy() {
-        connector = null;
     }
 }

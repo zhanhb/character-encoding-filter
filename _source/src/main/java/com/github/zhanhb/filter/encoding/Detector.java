@@ -31,9 +31,16 @@ import java.util.Set;
 @SuppressWarnings("FinalClass")
 final class Detector {
 
+    public static Detector newDetector() {
+        return new Detector();
+    }
+
     private String expectPath;
     private String expectEncoding;
     private String result;
+
+    private Detector() {
+    }
 
     private String detect(String path, String encoding) {
         if (path == null || path.length() == 0) {
