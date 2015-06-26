@@ -145,11 +145,12 @@ final class Request extends HttpServletRequestWrapper {
 
         Enumeration<?> e = super.getParameterNames();
         while (e.hasMoreElements()) {
-            String name = parse(e.nextElement().toString());
+            String name = e.nextElement().toString();
+            String parsedName = parse(name);
             String[] parameterValues = super.getParameterValues(name);
             if (parameterValues != null) {
                 for (String value : parameterValues) {
-                    param.addParameter(name, parse(value));
+                    param.addParameter(parsedName, parse(value));
                 }
             }
         }
