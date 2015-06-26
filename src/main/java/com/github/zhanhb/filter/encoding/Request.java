@@ -25,28 +25,26 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
 
 /**
  * Request facade.
  *
  * @author zhanhb
  */
-final class Request {
+@SuppressWarnings("FinalClass")
+final class Request extends HttpServletRequestWrapper {
 
     private Map<String, String[]> parameterMap;
     private boolean parametersParsed = false;
     private final Parameters parameters = new Parameters();
-    private final Detector pathDetector =  Detector.newDetector();
+    private final Detector pathDetector = Detector.newDetector();
     private final Detector pathInfoDetector = Detector.newDetector();
     private final Detector pathTranslated = Detector.newDetector();
-    private final HttpServletRequest request;
     private String characterEncoding = CharsetFactory.ISO_8859_1.name();
 
     Request(HttpServletRequest request) {
-        if (request == null) {
-            throw new NullPointerException();
-        }
-        this.request = request;
+        super(request);
     }
 
     /**
@@ -57,6 +55,7 @@ final class Request {
      * @param name Name of the desired request parameter
      * @return the value of the specified request parameter
      */
+    @Override
     public String getParameter(String name) {
         return parseParameters().getParameter(name);
     }
@@ -70,6 +69,7 @@ final class Request {
      * @return A <code>Map</code> containing parameter names as keys and
      * parameter values as map values.
      */
+    @Override
     public Map<String, String[]> getParameterMap() {
         Map<String, String[]> map = parameterMap;
         if (map == null) {
@@ -89,6 +89,7 @@ final class Request {
      *
      * @return the names of all defined request parameters for this request.
      */
+    @Override
     public Enumeration<String> getParameterNames() {
         return parseParameters().getParameterNames();
     }
@@ -100,28 +101,34 @@ final class Request {
      * @param name Name of the desired request parameter
      * @return the defined values for the specified request parameter
      */
+    @Override
     public String[] getParameterValues(String name) {
         return parseParameters().getParameterValues(name);
     }
 
+    @Override
     public String getServletPath() {
-        return pathDetector.expr(request.getServletPath(), characterEncoding);
+        return pathDetector.expr(super.getServletPath(), characterEncoding);
     }
 
+    @Override
     public String getPathInfo() {
-        return pathInfoDetector.expr(request.getPathInfo(), characterEncoding);
+        return pathInfoDetector.expr(super.getPathInfo(), characterEncoding);
     }
 
+    @Override
     public String getPathTranslated() {
-        return pathTranslated.expr(request.getPathTranslated(), characterEncoding);
+        return pathTranslated.expr(super.getPathTranslated(), characterEncoding);
     }
 
+    @Override
     public String getCharacterEncoding() {
         return characterEncoding;
     }
 
+    @Override
     public void setCharacterEncoding(String env) throws UnsupportedEncodingException {
-        request.setCharacterEncoding(CharsetFactory.ISO_8859_1.name());
+        super.setCharacterEncoding(CharsetFactory.ISO_8859_1.name());
         try {
             characterEncoding = Charset.forName(env).name();
         } catch (IllegalArgumentException ex) {
@@ -136,10 +143,10 @@ final class Request {
         }
         parametersParsed = true;
 
-        Enumeration<?> e = request.getParameterNames();
+        Enumeration<?> e = super.getParameterNames();
         while (e.hasMoreElements()) {
             String name = parse(e.nextElement().toString());
-            String[] parameterValues = request.getParameterValues(name);
+            String[] parameterValues = super.getParameterValues(name);
             if (parameterValues != null) {
                 for (String value : parameterValues) {
                     param.addParameter(name, parse(value));
@@ -152,7 +159,7 @@ final class Request {
     private String parse(String name) {
         try {
             ByteBuffer encode = CharsetFactory.ISO_8859_1.newEncoder().encode(CharBuffer.wrap(name));
-            return CharsetFactory.getCharset(characterEncoding, CharsetFactory.UTF_8).decode(encode).toString();
+            return CharsetFactory.getCharset(characterEncoding, CharsetFactory.ISO_8859_1).decode(encode).toString();
         } catch (CharacterCodingException ex) {
         }
         return name;

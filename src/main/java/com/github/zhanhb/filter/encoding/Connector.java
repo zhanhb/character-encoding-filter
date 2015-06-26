@@ -15,8 +15,6 @@
  */
 package com.github.zhanhb.filter.encoding;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Proxy;
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 
@@ -38,11 +36,7 @@ public final class Connector {
         } catch (ClassCastException ex) {
             return request;
         }
-        Class<?>[] interfaces = new Class<?>[]{HttpServletRequest.class};
-
-        ClassLoader loader = Connector.class.getClassLoader();
-        InvocationHandler handler = new CustomInvocationHandler(new Request(h), request);
-        return (ServletRequest) Proxy.newProxyInstance(loader, interfaces, handler);
+        return new Request(h);
     }
 
 }

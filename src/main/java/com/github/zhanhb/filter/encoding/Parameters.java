@@ -57,12 +57,11 @@ final class Parameters {
         }
     }
 
-    public int size() {
+    int size() {
         return paramHashValues.size();
     }
 
-    Parameters addParameter(String key, String value)
-            throws IllegalStateException {
+    Parameters addParameter(String key, String value) {
 
         if (key == null) {
             return this;
