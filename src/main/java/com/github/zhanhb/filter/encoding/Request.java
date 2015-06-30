@@ -41,7 +41,7 @@ final class Request {
     private final Detector pathInfoDetector = Detector.newDetector();
     private final Detector pathTranslated = Detector.newDetector();
     private String characterEncoding = CharsetFactory.ISO_8859_1.name();
-    private final HttpServletRequest request;
+    private HttpServletRequest request;
 
     Request(HttpServletRequest request) {
         this.request = request;
@@ -146,6 +146,10 @@ final class Request {
             }
         }
         return param;
+    }
+
+    public void setRequest(HttpServletRequest request) {
+        this.request = request;
     }
 
     private String parse(String name) {
