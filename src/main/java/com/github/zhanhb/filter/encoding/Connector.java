@@ -15,13 +15,9 @@
  */
 package com.github.zhanhb.filter.encoding;
 
-import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Proxy;
-import java.util.Enumeration;
-import java.util.Map;
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
 
 /**
  * Implementation of a character encoding connector.
@@ -47,8 +43,7 @@ public final class Connector {
         } catch (ClassCastException ex) {
             return request;
         }
-        Request req = new Request(h);
-        return useProxy ? createProxy(req, h) : createWrapper(req, h);
+        return useProxy ? createProxy(new Request(h), h) : createWrapper(h);
     }
 
     private ServletRequest createProxy(Object... arr) {
@@ -57,61 +52,8 @@ public final class Connector {
                 new CustomInvocationHandler(arr));
     }
 
-    private ServletRequest createWrapper(final Request req, final HttpServletRequest request) {
-        class RequestWrapper extends HttpServletRequestWrapper {
-
-            RequestWrapper() {
-                super(request);
-            }
-
-            @Override
-            public String getParameter(String name) {
-                return req.getParameter(name);
-            }
-
-            @Override
-            public Map<String, String[]> getParameterMap() {
-                return req.getParameterMap();
-            }
-
-            @Override
-            public Enumeration<String> getParameterNames() {
-                return req.getParameterNames();
-            }
-
-            @Override
-            public String[] getParameterValues(String name) {
-                return req.getParameterValues(name);
-            }
-
-            @Override
-            public String getServletPath() {
-                return req.getServletPath();
-            }
-
-            @Override
-            public String getPathInfo() {
-                return req.getPathInfo();
-            }
-
-            @Override
-            public String getPathTranslated() {
-                return req.getPathTranslated();
-            }
-
-            @Override
-            public String getCharacterEncoding() {
-                return req.getCharacterEncoding();
-            }
-
-            @Override
-            public void setCharacterEncoding(String env) throws UnsupportedEncodingException {
-                req.setCharacterEncoding(env);
-            }
-
-        }
-
-        return new RequestWrapper();
+    private ServletRequest createWrapper(HttpServletRequest request) {
+        return new RequestWrapper(request);
     }
 
 }
