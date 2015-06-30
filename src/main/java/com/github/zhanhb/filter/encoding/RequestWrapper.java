@@ -16,9 +16,14 @@
 package com.github.zhanhb.filter.encoding;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
+import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Map;
-import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 
@@ -28,11 +33,16 @@ import javax.servlet.http.HttpServletRequestWrapper;
  */
 class RequestWrapper extends HttpServletRequestWrapper {
 
-    private final Request delegate;
+    private Map<String, String[]> parameterMap;
+    private boolean parametersParsed = false;
+    private final Parameters parameters = new Parameters();
+    private final Detector pathDetector = Detector.newDetector();
+    private final Detector pathInfoDetector = Detector.newDetector();
+    private final Detector pathTranslated = Detector.newDetector();
+    private String characterEncoding = CharsetFactory.ISO_8859_1.name();
 
     RequestWrapper(HttpServletRequest request) {
         super(request);
-        delegate = new Request(request);
     }
 
     /**
@@ -43,31 +53,40 @@ class RequestWrapper extends HttpServletRequestWrapper {
      * @param name Name of the desired request parameter
      * @return the value of the specified request parameter
      */
-    @Override
     public String getParameter(String name) {
-        return delegate.getParameter(name);
+        return parseParameters().getParameter(name);
     }
 
     /**
      * Returns a <code>Map</code> of the parameters of this super. Request
-     * parameters are extra information sent with the super. For HTTP servlets,
-     * parameters are contained in the query string or posted form data.
+     * parameters are extra information sent with the request. For HTTP
+     * servlets, parameters are contained in the query string or posted form
+     * data.
      *
      * @return A <code>Map</code> containing parameter names as keys and
      * parameter values as map values.
      */
-    @Override
     public Map<String, String[]> getParameterMap() {
-        return delegate.getParameterMap();
+        Map<String, String[]> map = parameterMap;
+        if (map == null) {
+            map = new HashMap<String, String[]>(parseParameters().size());
+            Enumeration<String> parameterNames = getParameterNames();
+            while (parameterNames.hasMoreElements()) {
+                String name = parameterNames.nextElement();
+                String[] values = getParameterValues(name);
+                map.put(name, values);
+            }
+            parameterMap = map;
+        }
+        return Collections.unmodifiableMap(map);
     }
 
     /**
      *
-     * @return the names of all defined request parameters for this super.
+     * @return the names of all defined request parameters for this request.
      */
-    @Override
     public Enumeration<String> getParameterNames() {
-        return delegate.getParameterNames();
+        return parseParameters().getParameterNames();
     }
 
     /**
@@ -77,40 +96,64 @@ class RequestWrapper extends HttpServletRequestWrapper {
      * @param name Name of the desired request parameter
      * @return the defined values for the specified request parameter
      */
-    @Override
     public String[] getParameterValues(String name) {
-        return delegate.getParameterValues(name);
+        return parseParameters().getParameterValues(name);
     }
 
-    @Override
     public String getServletPath() {
-        return delegate.getServletPath();
+        return pathDetector.expr(super.getServletPath(), characterEncoding);
     }
 
-    @Override
     public String getPathInfo() {
-        return delegate.getPathInfo();
+        return pathInfoDetector.expr(super.getPathInfo(), characterEncoding);
     }
 
-    @Override
     public String getPathTranslated() {
-        return delegate.getPathTranslated();
+        return pathTranslated.expr(super.getPathTranslated(), characterEncoding);
     }
 
-    @Override
     public String getCharacterEncoding() {
-        return delegate.getCharacterEncoding();
+        return characterEncoding;
     }
 
-    @Override
     public void setCharacterEncoding(String env) throws UnsupportedEncodingException {
-        delegate.setCharacterEncoding(env);
+        try {
+            Charset.forName(env).name();
+        } catch (IllegalArgumentException ex) {
+            throw new UnsupportedEncodingException(env);
+        }
+        super.setCharacterEncoding(CharsetFactory.ISO_8859_1.name());
+        characterEncoding = env;
     }
 
-    @Override
-    public void setRequest(ServletRequest request) {
-        super.setRequest(request);
-        delegate.setRequest(HttpServletRequest.class.cast(request));
+    private Parameters parseParameters() {
+        Parameters param = this.parameters;
+        if (parametersParsed) {
+            return param;
+        }
+        parametersParsed = true;
+
+        Enumeration<?> e = super.getParameterNames();
+        while (e.hasMoreElements()) {
+            String name = e.nextElement().toString();
+            String parsedName = parse(name);
+            String[] parameterValues = super.getParameterValues(name);
+            if (parameterValues != null) {
+                for (String value : parameterValues) {
+                    param.addParameter(parsedName, parse(value));
+                }
+            }
+        }
+        return param;
+    }
+
+    private String parse(String name) {
+        try {
+            ByteBuffer encode = CharsetFactory.ISO_8859_1.newEncoder().encode(CharBuffer.wrap(name));
+            return CharsetFactory.getCharset(characterEncoding, CharsetFactory.ISO_8859_1).decode(encode).toString();
+        } catch (CharacterCodingException ex) {
+        }
+        return name;
     }
 
 }

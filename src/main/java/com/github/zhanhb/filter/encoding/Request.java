@@ -41,7 +41,7 @@ final class Request {
     private final Detector pathInfoDetector = Detector.newDetector();
     private final Detector pathTranslated = Detector.newDetector();
     private String characterEncoding = CharsetFactory.ISO_8859_1.name();
-    private HttpServletRequest request;
+    private final HttpServletRequest request;
 
     Request(HttpServletRequest request) {
         this.request = request;
@@ -119,12 +119,13 @@ final class Request {
     }
 
     public void setCharacterEncoding(String env) throws UnsupportedEncodingException {
-        request.setCharacterEncoding(CharsetFactory.ISO_8859_1.name());
         try {
-            characterEncoding = Charset.forName(env).name();
+            Charset.forName(env).name();
         } catch (IllegalArgumentException ex) {
             throw new UnsupportedEncodingException(env);
         }
+        request.setCharacterEncoding(CharsetFactory.ISO_8859_1.name());
+        characterEncoding = env;
     }
 
     private Parameters parseParameters() {
@@ -146,10 +147,6 @@ final class Request {
             }
         }
         return param;
-    }
-
-    public void setRequest(HttpServletRequest request) {
-        this.request = request;
     }
 
     private String parse(String name) {
