@@ -25,7 +25,6 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
 
 /**
  * Request facade.
@@ -33,7 +32,7 @@ import javax.servlet.http.HttpServletRequestWrapper;
  * @author zhanhb
  */
 @SuppressWarnings("FinalClass")
-final class Request extends HttpServletRequestWrapper {
+final class Request {
 
     private Map<String, String[]> parameterMap;
     private boolean parametersParsed = false;
@@ -42,9 +41,10 @@ final class Request extends HttpServletRequestWrapper {
     private final Detector pathInfoDetector = Detector.newDetector();
     private final Detector pathTranslated = Detector.newDetector();
     private String characterEncoding = CharsetFactory.ISO_8859_1.name();
+    private final HttpServletRequest request;
 
     Request(HttpServletRequest request) {
-        super(request);
+        this.request = request;
     }
 
     /**
@@ -55,7 +55,6 @@ final class Request extends HttpServletRequestWrapper {
      * @param name Name of the desired request parameter
      * @return the value of the specified request parameter
      */
-    @Override
     public String getParameter(String name) {
         return parseParameters().getParameter(name);
     }
@@ -69,7 +68,6 @@ final class Request extends HttpServletRequestWrapper {
      * @return A <code>Map</code> containing parameter names as keys and
      * parameter values as map values.
      */
-    @Override
     public Map<String, String[]> getParameterMap() {
         Map<String, String[]> map = parameterMap;
         if (map == null) {
@@ -89,7 +87,6 @@ final class Request extends HttpServletRequestWrapper {
      *
      * @return the names of all defined request parameters for this request.
      */
-    @Override
     public Enumeration<String> getParameterNames() {
         return parseParameters().getParameterNames();
     }
@@ -101,34 +98,28 @@ final class Request extends HttpServletRequestWrapper {
      * @param name Name of the desired request parameter
      * @return the defined values for the specified request parameter
      */
-    @Override
     public String[] getParameterValues(String name) {
         return parseParameters().getParameterValues(name);
     }
 
-    @Override
     public String getServletPath() {
-        return pathDetector.expr(super.getServletPath(), characterEncoding);
+        return pathDetector.expr(request.getServletPath(), characterEncoding);
     }
 
-    @Override
     public String getPathInfo() {
-        return pathInfoDetector.expr(super.getPathInfo(), characterEncoding);
+        return pathInfoDetector.expr(request.getPathInfo(), characterEncoding);
     }
 
-    @Override
     public String getPathTranslated() {
-        return pathTranslated.expr(super.getPathTranslated(), characterEncoding);
+        return pathTranslated.expr(request.getPathTranslated(), characterEncoding);
     }
 
-    @Override
     public String getCharacterEncoding() {
         return characterEncoding;
     }
 
-    @Override
     public void setCharacterEncoding(String env) throws UnsupportedEncodingException {
-        super.setCharacterEncoding(CharsetFactory.ISO_8859_1.name());
+        request.setCharacterEncoding(CharsetFactory.ISO_8859_1.name());
         try {
             characterEncoding = Charset.forName(env).name();
         } catch (IllegalArgumentException ex) {
@@ -143,11 +134,11 @@ final class Request extends HttpServletRequestWrapper {
         }
         parametersParsed = true;
 
-        Enumeration<?> e = super.getParameterNames();
+        Enumeration<?> e = request.getParameterNames();
         while (e.hasMoreElements()) {
             String name = e.nextElement().toString();
             String parsedName = parse(name);
-            String[] parameterValues = super.getParameterValues(name);
+            String[] parameterValues = request.getParameterValues(name);
             if (parameterValues != null) {
                 for (String value : parameterValues) {
                     param.addParameter(parsedName, parse(value));
