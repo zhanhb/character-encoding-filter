@@ -38,37 +38,34 @@ class CustomInvocationHandler implements InvocationHandler {
 
     private static void getDescriptor(StringBuilder buf, Class<?> c) {
         Class<?> d = c;
-        while (true) {
-            if (d.isPrimitive()) {
-                char car;
-                if (d == Integer.TYPE) {
-                    car = 'I';
-                } else if (d == Void.TYPE) {
-                    car = 'V';
-                } else if (d == Boolean.TYPE) {
-                    car = 'Z';
-                } else if (d == Byte.TYPE) {
-                    car = 'B';
-                } else if (d == Character.TYPE) {
-                    car = 'C';
-                } else if (d == Short.TYPE) {
-                    car = 'S';
-                } else if (d == Double.TYPE) {
-                    car = 'D';
-                } else if (d == Float.TYPE) {
-                    car = 'F';
-                } else /* if (d == Long.TYPE) */ {
-                    car = 'J';
-                }
-                buf.append(car);
-                break;
-            } else if (d.isArray()) {
-                buf.append('[');
-                d = d.getComponentType();
-            } else {
-                buf.append('L').append(d.getName().replace('.', '/')).append(';');
-                break;
+        while (d.isArray()) {
+            buf.append('[');
+            d = d.getComponentType();
+        }
+        if (d.isPrimitive()) {
+            char car;
+            if (d == int.class) {
+                car = 'I';
+            } else if (d == void.class) {
+                car = 'V';
+            } else if (d == boolean.class) {
+                car = 'Z';
+            } else if (d == byte.class) {
+                car = 'B';
+            } else if (d == char.class) {
+                car = 'C';
+            } else if (d == short.class) {
+                car = 'S';
+            } else if (d == double.class) {
+                car = 'D';
+            } else if (d == float.class) {
+                car = 'F';
+            } else /* if (d == long.class) */ {
+                car = 'J';
             }
+            buf.append(car);
+        } else {
+            buf.append('L').append(d.getName().replace('.', '/')).append(';');
         }
     }
 
@@ -87,23 +84,6 @@ class CustomInvocationHandler implements InvocationHandler {
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         String methodName = method.getName();
-        Class<?>[] parameterTypes = method.getParameterTypes();
-
-        switch (parameterTypes.length) {
-            case 0:
-                if ("toString".equals(methodName)) {
-                    return proxy.getClass().getName() + "@" + Integer.toHexString(proxy.hashCode());
-                }
-                if ("hashCode".equals(methodName)) {
-                    return System.identityHashCode(proxy);
-                }
-                break;
-            case 1:
-                if ("equals".equals(methodName) && args[0] == Object.class) {
-                    return proxy == args[0];
-                }
-                break;
-        }
 
         for (int i = 0, len = parents.length; i < len; ++i) {
             Object parent = parents[i];
@@ -113,6 +93,10 @@ class CustomInvocationHandler implements InvocationHandler {
             } catch (NoSuchMethodException ex) {
                 continue;
             }
+            // don't override Object.toString, hashCode equals
+            if (m.getDeclaringClass() == Object.class) {
+                return objectMethods(methodName, proxy, args);
+            }
             try {
                 return m.invoke(parent, args);
             } catch (InvocationTargetException ex) {
@@ -120,8 +104,32 @@ class CustomInvocationHandler implements InvocationHandler {
             }
         }
 
+        if (method.getDeclaringClass().isInterface()) {
+
+        }
+
         StringBuilder buf = new StringBuilder(proxy.getClass().getName()).append('.').append(methodName);
         throw new AbstractMethodError(getMethodDescriptor(buf, method).toString());
+    }
+
+    private Object objectMethods(String methodName, Object proxy, Object[] args) {
+        if ("toString".equals(methodName)) {
+            return proxy.getClass().getName() + "@" + Integer.toHexString(proxy.hashCode());
+        }
+        if ("hashCode".equals(methodName)) {
+            return System.identityHashCode(proxy);
+        }
+        if ("equals".equals(methodName)) {
+            return proxy == args[0];
+        }
+        if ("finalize".equals(methodName)) {
+            return null;
+        }
+        // clone method is so hard to write
+        if ("clone".equals(methodName)) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+        throw new IllegalStateException("Object has new overridable method, sorry for that I don't it.");
     }
 
 }

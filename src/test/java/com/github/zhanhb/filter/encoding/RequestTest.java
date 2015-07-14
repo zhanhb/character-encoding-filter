@@ -24,6 +24,7 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.UnsupportedCharsetException;
 import javax.servlet.http.HttpServletRequest;
+import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 public class RequestTest {
@@ -59,17 +60,16 @@ public class RequestTest {
     @Test
     public void testProxy() {
         System.out.println("testProxy");
-        Object proxy = Proxy.newProxyInstance(RequestTest.class.getClassLoader(), new Class<?>[]{HttpServletRequest.class}, new InvocationHandler() {
+        HttpServletRequest proxy = (HttpServletRequest) Proxy.newProxyInstance(RequestTest.class.getClassLoader(),
+                new Class<?>[]{HttpServletRequest.class},
+                new InvocationHandler() {
 
-            @Override
-            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                System.out.println(method.getName());
-                if (method.getName().equals("getClass")) {
-                    return RequestTest.class;
-                }
-                return null;
-            }
-        });
-        System.out.println(proxy.getClass());
+                    @Override
+                    public Object invoke(Object proxy, Method method, Object[] args)
+                    throws Throwable {
+                        throw new IllegalStateException();
+                    }
+                });
+        assertTrue(Proxy.class.isAssignableFrom(proxy.getClass()));
     }
 }
