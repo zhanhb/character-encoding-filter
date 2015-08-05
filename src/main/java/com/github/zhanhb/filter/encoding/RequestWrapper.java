@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 
@@ -45,6 +46,22 @@ class RequestWrapper extends HttpServletRequestWrapper {
         super(request);
     }
 
+    @Override
+    public ServletRequest getRequest() {
+        return super.getRequest();
+    }
+
+    @Override
+    public void setRequest(ServletRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Request cannot be null");
+        }
+        if (!(request instanceof HttpServletRequest)) {
+            throw new ClassCastException();
+        }
+        super.setRequest(request);
+    }
+
     /**
      * Return the value of the specified request parameter, if any; otherwise,
      * return <code>null</code>. If there is more than one value defined, return
@@ -53,6 +70,7 @@ class RequestWrapper extends HttpServletRequestWrapper {
      * @param name Name of the desired request parameter
      * @return the value of the specified request parameter
      */
+    @Override
     public String getParameter(String name) {
         return parseParameters().getParameter(name);
     }
@@ -66,6 +84,7 @@ class RequestWrapper extends HttpServletRequestWrapper {
      * @return A <code>Map</code> containing parameter names as keys and
      * parameter values as map values.
      */
+    @Override
     public Map<String, String[]> getParameterMap() {
         Map<String, String[]> map = parameterMap;
         if (map == null) {
@@ -85,6 +104,7 @@ class RequestWrapper extends HttpServletRequestWrapper {
      *
      * @return the names of all defined request parameters for this request.
      */
+    @Override
     public Enumeration<String> getParameterNames() {
         return parseParameters().getParameterNames();
     }
@@ -96,26 +116,32 @@ class RequestWrapper extends HttpServletRequestWrapper {
      * @param name Name of the desired request parameter
      * @return the defined values for the specified request parameter
      */
+    @Override
     public String[] getParameterValues(String name) {
         return parseParameters().getParameterValues(name);
     }
 
+    @Override
     public String getServletPath() {
         return pathDetector.expr(super.getServletPath(), characterEncoding);
     }
 
+    @Override
     public String getPathInfo() {
         return pathInfoDetector.expr(super.getPathInfo(), characterEncoding);
     }
 
+    @Override
     public String getPathTranslated() {
         return pathTranslated.expr(super.getPathTranslated(), characterEncoding);
     }
 
+    @Override
     public String getCharacterEncoding() {
         return characterEncoding;
     }
 
+    @Override
     public void setCharacterEncoding(String env) throws UnsupportedEncodingException {
         try {
             Charset.forName(env).name();
@@ -149,9 +175,13 @@ class RequestWrapper extends HttpServletRequestWrapper {
 
     private String parse(String name) {
         try {
-            ByteBuffer encode = CharsetFactory.ISO_8859_1.newEncoder().encode(CharBuffer.wrap(name));
-            return CharsetFactory.getCharset(characterEncoding, CharsetFactory.ISO_8859_1).decode(encode).toString();
+            Charset targetCharset = CharsetFactory.getCharset(characterEncoding, CharsetFactory.ISO_8859_1);
+            if (!CharsetFactory.ISO_8859_1.equals(targetCharset)) {
+                ByteBuffer encode = CharsetFactory.ISO_8859_1.newEncoder().encode(CharBuffer.wrap(name));
+                return targetCharset.newDecoder().decode(encode).toString();
+            }
         } catch (CharacterCodingException ex) {
+            // keep orign field if character coding is not correct.
         }
         return name;
     }

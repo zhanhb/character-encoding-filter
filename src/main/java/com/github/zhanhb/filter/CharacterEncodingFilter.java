@@ -61,15 +61,6 @@ public class CharacterEncodingFilter implements Filter {
         this.characterEncoding = characterEncoding;
     }
 
-    public CharacterEncodingFilter useProxy(boolean useProxy) {
-        connector.setUseProxy(useProxy);
-        return this;
-    }
-
-    public CharacterEncodingFilter useProxy() {
-        return useProxy(true);
-    }
-
     public CharacterEncodingFilter setResponseCharacterEncoding(boolean setResponseCharacterEncoding) {
         this.setResponseCharacterEncoding = setResponseCharacterEncoding;
         return this;

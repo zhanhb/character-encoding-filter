@@ -19,8 +19,6 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Path Detector. detect the contextPath and pathInfo who doesn't have properly
@@ -57,17 +55,10 @@ final class Detector {
 
         // browsers will transfer URI encoding as UTF-8
         // so we try UTF-8 first, then the character encoding set in request attribute
-        // if failed we will try the system default encoding
-        Set<Charset> set = new HashSet<Charset>(4);
         for (Charset charset : new Charset[]{
             CharsetFactory.UTF_8,
-            CharsetFactory.getCharset(encoding, null),
-            Charset.defaultCharset()
+            CharsetFactory.getCharset(encoding, null)
         }) {
-            if (charset == null || set.contains(charset)) {
-                continue;
-            }
-            set.add(charset);
             int position = bytes.position();
             try {
                 return charset.newDecoder().decode(bytes).toString();

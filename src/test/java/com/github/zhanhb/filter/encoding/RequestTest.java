@@ -15,14 +15,10 @@
  */
 package com.github.zhanhb.filter.encoding;
 
-import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.nio.ByteBuffer;
-import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
-import java.nio.charset.UnsupportedCharsetException;
 import javax.servlet.http.HttpServletRequest;
 import static org.junit.Assert.assertTrue;
 import org.junit.Test;
@@ -31,31 +27,6 @@ public class RequestTest {
 
     public static final Charset UTF_8 = CharsetFactory.UTF_8;
     public static final Charset ISO_8859_1 = CharsetFactory.ISO_8859_1;
-
-    private String gg(String servletPath) throws IOException {
-        try {
-            String enc = "utf8";
-            Charset charset = CharsetFactory.getCharset(enc, ISO_8859_1);
-            if (!charset.equals(UTF_8) && !charset.equals(ISO_8859_1)) {
-                ByteBuffer bytes = ISO_8859_1.encode(servletPath);
-                try {
-                    return charset.newDecoder().decode(bytes).toString();
-                } catch (CharacterCodingException ex) {
-                }
-            }
-        } catch (UnsupportedCharsetException ex) {
-        }
-        return servletPath;
-    }
-
-    @Test
-    public void testGetServletPath() throws IOException {
-        // this getBytes of this char as GBK you can get a UTF-8 like bytes.
-        byte[] bytes = "通通".getBytes("GBK");
-        System.out.println(gg(new String(bytes, "ISO-8859-1")));
-        ByteBuffer wrap = ByteBuffer.wrap(bytes);
-        System.out.println(ISO_8859_1.newDecoder().decode(wrap));
-    }
 
     @Test
     public void testProxy() {

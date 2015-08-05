@@ -10,9 +10,6 @@
             <goal>javadoc:jar</goal>
             <goal>deploy</goal>
         </goals>
-        <properties>
-            <gpg.passphrase>zhanhb8@qq.com</gpg.passphrase>
-        </properties>
         <activatedProfiles>
             <activatedProfile>release</activatedProfile>
         </activatedProfiles>

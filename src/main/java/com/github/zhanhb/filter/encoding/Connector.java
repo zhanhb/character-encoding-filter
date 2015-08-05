@@ -15,7 +15,6 @@
  */
 package com.github.zhanhb.filter.encoding;
 
-import java.lang.reflect.Proxy;
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 
@@ -27,12 +26,6 @@ import javax.servlet.http.HttpServletRequest;
 @SuppressWarnings({"FinalClass", "ClassWithoutLogger"})
 public final class Connector {
 
-    private boolean useProxy;
-
-    public void setUseProxy(boolean useProxy) {
-        this.useProxy = useProxy;
-    }
-
     public ServletRequest createRequest(ServletRequest request) {
         if (request == null) {
             throw new NullPointerException();
@@ -43,13 +36,7 @@ public final class Connector {
         } catch (ClassCastException ex) {
             return request;
         }
-        return useProxy ? createProxy(new Request(h), h) : createWrapper(h);
-    }
-
-    private ServletRequest createProxy(Object... arr) {
-        return (ServletRequest) Proxy.newProxyInstance(Connector.class.getClassLoader(),
-                new Class<?>[]{HttpServletRequest.class},
-                new CustomInvocationHandler(arr));
+        return createWrapper(h);
     }
 
     private ServletRequest createWrapper(HttpServletRequest request) {
