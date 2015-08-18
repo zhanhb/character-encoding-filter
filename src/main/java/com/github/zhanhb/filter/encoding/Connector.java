@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 zhanhb.
+ * Copyright 2014-2015 zhanhb.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,11 +36,7 @@ public final class Connector {
         } catch (ClassCastException ex) {
             return request;
         }
-        return createWrapper(h);
-    }
-
-    private ServletRequest createWrapper(HttpServletRequest request) {
-        return new RequestWrapper(request);
+        return new RequestWrapper(h);
     }
 
 }

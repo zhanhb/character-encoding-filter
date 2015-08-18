@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 zhanhb.
+ * Copyright 2014-2015 zhanhb.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,14 +35,12 @@ public class CharacterEncodingFilter implements Filter {
 
     private String characterEncoding = "UTF-8";
     private boolean setResponseCharacterEncoding = false;
-    private Connector connector;
+    private final Connector connector = new Connector();
 
     public CharacterEncodingFilter() {
-        this("UTF-8");
     }
 
     public CharacterEncodingFilter(String characterEncoding) {
-        this.connector = new Connector();
         this.characterEncoding = characterEncoding;
     }
 
