@@ -39,6 +39,6 @@ Maven Clone:
 <dependency>
   <groupId>com.github.zhanhb</groupId>
   <artifactId>character-encoding-filter</artifactId>
-  <version>2.1.6.3</version>
+  <version>2.1.6.4</version>
 </dependency>
 ```
